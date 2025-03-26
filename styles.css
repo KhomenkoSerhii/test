@@ -28,19 +28,19 @@ body {
 }
 
 .tinder--card {
+  gap: 32px;
   text-align: center;
-  gap: 6px;
   position: absolute;
   width: 480px;
-  height: 404px;
+  min-height: 466px;
   padding: 35px;
   background-color: white;
   border-radius: 20px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  justify-content: space-between;
+  align-items: start;
   transition: transform 0.3s ease, opacity 0.3s ease;
   will-change: transform, opacity;
   cursor: grab;
@@ -50,41 +50,76 @@ body {
   backdrop-filter: blur(10px);
 }
 
-.tinder--card img {
+.tinder--card article {
+  gap: 32px;
   width: 100%;
-  height: auto;
-  border-top-left-radius: 10px;
-  border-top-right-radius: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: start;
 }
 
 .tinder--card h3 {
   color: #0c0e0c;
-  font-size: 35px;
-  font-weight: 700;
-}
-
-.tinder--card p:first-of-type {
-  color: #0c0e0c;
-  font-size: 20px;
-  font-weight: 400;
-}
-
-.tinder--card p:nth-of-type(2) {
-  color: #383d3a;
-  font-size: 16px;
-  font-weight: 400;
-}
-
-.tinder--card p:nth-of-type(3) {
-  color: #0c0e0c;
-  font-size: 16px;
+  font-size: 18px;
   font-weight: 500;
 }
 
-.tinder--card p:nth-of-type(4) {
-  color: #000;
-  font-size: 20px;
-  font-weight: 400;
+.tinder--card p {
+  color: #0c0e0c;
+  font-size: 25px;
+  font-style: normal;
+  font-weight: 700;
+  line-height: normal;
+}
+.tinder--card .details {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  width: 100%;
+}
+.tinder--card .details .company {
+  display: flex;
+  flex-direction: column;
+  align-items: start;
+  gap: 6px;
+}
+.tinder--card .details .company .company--header {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.tinder--card .details .company .company--header img {
+  width: 22px;
+  height: 22px;
+}
+
+.tinder--card .additional {
+  border-bottom: 1px solid #e0e0e0;
+  padding-bottom: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.tinder--card .additional svg {
+  width: 20px;
+  height: 20px;
+  margin-right: 6px;
+}
+.tinder--card .additional p {
+  color: #a5a7a5;
+  font-size: 16px;
+  font-weight: 500;
+}
+.tinder--card .additional span {
+  color: #383d3a;
+  font-size: 16px;
+  font-weight: 500;
+}
+.tinder--card .additional > div {
+  display: flex;
+  align-items: center;
 }
 
 .tinder--buttons {

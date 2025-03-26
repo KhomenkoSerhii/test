@@ -5,56 +5,122 @@ let currentCardIndex = 0;
 const SWIPE_THRESHOLD = 100;
 const CLICK_THRESHOLD = 10;
 
-const cardData = [
-  {
-    // image: "image1.jpg",
-    position: "Senior Software Engineer",
-    currentCompany: "Google",
-    prevCompanies: ["Facebook", "Amazon", "Microsoft"],
-    experience: "10+ years",
-    location: "San Francisco, CA",
-  },
-  {
-    // image: "image1.jpg",
-    position: "Senior Software Engineer",
-    currentCompany: "Google",
-    prevCompanies: ["Facebook", "Amazon", "Microsoft"],
-    experience: "10+ years",
-    location: "San Francisco, CA",
-  },
-  {
-    // image: "image1.jpg",
-    position: "Senior Software Engineer",
-    currentCompany: "Google",
-    prevCompanies: ["Facebook", "Amazon", "Microsoft"],
-    experience: "10+ years",
-    location: "San Francisco, CA",
-  },
-  {
-    // image: "image1.jpg",
-    position: "Senior Software Engineer",
-    currentCompany: "Google",
-    prevCompanies: ["Facebook", "Amazon", "Microsoft"],
-    experience: "10+ years",
-    location: "San Francisco, CA",
-  },
-];
+const generateCardData = (numCards) => {
+  const positions = [
+    "Senior Software Engineer",
+    "Frontend Developer",
+    "Backend Developer",
+    "Full Stack Developer",
+    "Data Scientist",
+    "DevOps Engineer",
+    "Product Manager",
+    "UI/UX Designer",
+  ];
 
-const createCardElement = (
-  { image, position, currentCompany, prevCompanies, experience, location },
-  index
-) => {
+  const companies = [
+    { name: "Google", url: "https://google.com" },
+    { name: "Facebook", url: "https://facebook.com" },
+    { name: "Amazon", url: "https://amazon.com" },
+    { name: "Microsoft", url: "https://microsoft.com" },
+    { name: "Netflix", url: "https://netflix.com" },
+    { name: "Apple", url: "https://apple.com" },
+  ];
+
+  const locations = [
+    "San Francisco, CA",
+    "New York, NY",
+    "Seattle, WA",
+    "Austin, TX",
+    "Boston, MA",
+    "Chicago, IL",
+  ];
+
+  const experienceLevels = ["1", "3", "5", "7", "10", "15"];
+
+  const getRandomItem = (array) =>
+    array[Math.floor(Math.random() * array.length)];
+
+  const generateCompanies = () => {
+    const numCompanies = Math.floor(Math.random() * 2) + 1; // 1 or 2 companies
+    return Array.from({ length: numCompanies }, () => {
+      const company = getRandomItem(companies);
+      return {
+        name: company.name,
+        position: getRandomItem(positions),
+        url: company.url,
+      };
+    });
+  };
+
+  return Array.from({ length: numCards }, () => ({
+    companies: generateCompanies(),
+    experience: getRandomItem(experienceLevels),
+    location: getRandomItem(locations),
+  }));
+};
+
+const cardData = generateCardData(5);
+
+const getCompanyFavicon = (url) => {
+  if (!url) return "";
+  const domain = new URL(url).hostname;
+  return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
+};
+
+const createCardElement = ({ companies, experience, location }, index) => {
   const card = document.createElement("div");
   card.classList.add("tinder--card");
   card.style.zIndex = 100 - index;
+
+  // Generate company details dynamically
+  const companyDetails = companies
+    .map(
+      (company) => `<div class="company">
+      <div class="company--header">
+      <img src="${getCompanyFavicon(company.url)}" alt="Company Logo" />
+          <h3>${company.name}</h3>
+          </div>
+          <p>${company.position}</p>
+          </div>
+        `
+    )
+    .join("");
+
+  // Card content
   card.innerHTML = `
-      <h3>${position}</h3>
-      <p>${currentCompany}</p>
-      <p>Previously at: ${prevCompanies.join(", ")}</p>
-      <p>${experience}</p>
-      <p>${location}</p>
+  <article>
+  <div class="details">
+      ${companyDetails}
+      </div>
+     
+      <div class="additional">
+        <div>
+        <svg xmlns="http://www.w3.org/2000/svg" width="19" height="18" viewBox="0 0 19 18" fill="none">
+  <path d="M15.8325 7.5C15.8325 11.2448 11.6783 15.1447 10.2833 16.3492C10.1533 16.447 9.99512 16.4998 9.83252 16.4998C9.66992 16.4998 9.51173 16.447 9.38177 16.3492C7.98677 15.1447 3.83252 11.2448 3.83252 7.5C3.83252 5.9087 4.46466 4.38258 5.58988 3.25736C6.7151 2.13214 8.24122 1.5 9.83252 1.5C11.4238 1.5 12.9499 2.13214 14.0752 3.25736C15.2004 4.38258 15.8325 5.9087 15.8325 7.5Z" stroke="#A5A7A5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M9.83252 9.75C11.0752 9.75 12.0825 8.74264 12.0825 7.5C12.0825 6.25736 11.0752 5.25 9.83252 5.25C8.58988 5.25 7.58252 6.25736 7.58252 7.5C7.58252 8.74264 8.58988 9.75 9.83252 9.75Z" stroke="#A5A7A5" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <p>Location:</p>
+        </div>
+        <span>${location}</span>
+      </div>
+
+    <div class="additional">
+        <div>
+<svg xmlns="http://www.w3.org/2000/svg" width="25" height="24" viewBox="0 0 25 24" fill="none">
+  <path d="M12.8325 6V18" stroke="#A5A7A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M18.0287 9L7.63672 15" stroke="#A5A7A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M7.63672 9L18.0287 15" stroke="#A5A7A5" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+</svg>
+        <p>Experience:</p>
+        </div>
+        <span>${experience} ${
+    experience > 1 ? "yrs of experience" : "year of experience"
+  }</span>
+      </div>
+</article>
+
       <div class="tinder--buttons">
-        <button class="decline">
+    <button class="decline">
           <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
             <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D"/>
             <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round"/>
@@ -195,5 +261,24 @@ const showInitialCards = (count = 2) => {
     currentCardIndex++;
   }
 };
+const removeCardWithHighestZIndex = (direction) => {
+  const cards = [...document.querySelectorAll(".tinder--card")];
+  if (cards.length === 0) return;
 
+  const topCard = cards.reduce((highest, card) => {
+    const currentZ = parseInt(window.getComputedStyle(card).zIndex || "0");
+    const highestZ = parseInt(window.getComputedStyle(highest).zIndex || "0");
+    return currentZ > highestZ ? card : highest;
+  }, cards[0]);
+
+  handleSwipe(topCard, direction);
+};
+
+document.addEventListener("keydown", (event) => {
+  if (event.key === "ArrowRight") {
+    removeCardWithHighestZIndex("right");
+  } else if (event.key === "ArrowLeft") {
+    removeCardWithHighestZIndex("left");
+  }
+});
 showInitialCards();
