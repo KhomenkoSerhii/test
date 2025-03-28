@@ -5,74 +5,135 @@ let currentCardIndex = 0;
 const SWIPE_THRESHOLD = 100;
 const CLICK_THRESHOLD = 10;
 
-const generateCardData = (numCards) => {
-  const positions = [
-    "Senior Software Engineer",
-    "Frontend Developer",
-    "Backend Developer",
-    "Full Stack Developer",
-    "Data Scientist",
-    "DevOps Engineer",
-    "Product Manager",
-    "UI/UX Designer",
-  ];
+const cardData = [
+  {
+    id: "1",
+    companies: [
+      {
+        name: "Facebook",
+        position: "UI/UX Designer",
+        url: "https://facebook.com",
+      },
+    ],
+    experience: "10",
+    location: "Boston, MA",
+  },
+  {
+    id: "2",
+    companies: [
+      {
+        name: "Facebook",
+        position: "Frontend Developer",
+        url: "https://facebook.com",
+      },
+    ],
+    experience: "3",
+    location: "New York, NY",
+  },
+  {
+    id: "3",
+    companies: [
+      {
+        name: "Microsoft",
+        position: "DevOps Engineer",
+        url: "https://microsoft.com",
+      },
+    ],
+    experience: "15",
+    location: "San Francisco, CA",
+  },
+  {
+    id: "4",
+    companies: [
+      {
+        name: "Amazon",
+        position: "Full Stack Developer",
+        url: "https://amazon.com",
+      },
+    ],
+    experience: "3",
+    location: "Chicago, IL",
+  },
+  {
+    id: "5",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
+];
 
-  const companies = [
-    { name: "Google", url: "https://google.com" },
-    { name: "Facebook", url: "https://facebook.com" },
-    { name: "Amazon", url: "https://amazon.com" },
-    { name: "Microsoft", url: "https://microsoft.com" },
-    { name: "Netflix", url: "https://netflix.com" },
-    { name: "Apple", url: "https://apple.com" },
-  ];
+// Initialize arrays to store accepted and declined user IDs
+const acceptedUsers = JSON.parse(localStorage.getItem("acceptedUsers")) || [];
+const declinedUsers = JSON.parse(localStorage.getItem("declinedUsers")) || [];
 
-  const locations = [
-    "San Francisco, CA",
-    "New York, NY",
-    "Seattle, WA",
-    "Austin, TX",
-    "Boston, MA",
-    "Chicago, IL",
-  ];
-
-  const experienceLevels = ["1", "3", "5", "7", "10", "15"];
-
-  const getRandomItem = (array) =>
-    array[Math.floor(Math.random() * array.length)];
-
-  const generateCompanies = () => {
-    const numCompanies = Math.floor(Math.random() * 2) + 1; // 1 or 2 companies
-    return Array.from({ length: numCompanies }, () => {
-      const company = getRandomItem(companies);
-      return {
-        name: company.name,
-        position: getRandomItem(positions),
-        url: company.url,
-      };
-    });
-  };
-
-  return Array.from({ length: numCards }, () => ({
-    companies: generateCompanies(),
-    experience: getRandomItem(experienceLevels),
-    location: getRandomItem(locations),
-  }));
+// Function to update local storage
+const updateLocalStorage = () => {
+  localStorage.setItem("acceptedUsers", JSON.stringify(acceptedUsers));
+  localStorage.setItem("declinedUsers", JSON.stringify(declinedUsers));
 };
 
-const cardData = generateCardData(5);
+const bookACall = () => {
+  window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+};
 
+const continueSwiping = () => {
+  document.querySelector(".modal").remove();
+};
+
+// Function to show the "Book a Call" modal
+const showBookCallModal = () => {
+  const modal = document.createElement("div");
+  modal.classList.add("modal");
+  modal.innerHTML = `
+      <div class="modal-content card">
+        <h2>We have ${acceptedUsers.length} top <br/> matches!</h2>
+        <p>Congrats! Book a call with our Co-Founder now to run through your candidates.</p>
+        <div>
+        <button class="book-call"
+            type="button"
+            onclick="bookACall()"
+        >Book a Call</button>
+        <button
+            class="close-modal"
+            type="button"
+            onclick="continueSwiping()"
+        class="book-call">Continue Swiping</button>
+         </div>
+      </div>
+    `;
+  document.body.appendChild(modal);
+
+  // Close modal functionality
+  const closeModalButton = modal.querySelector(".close-modal");
+  closeModalButton.addEventListener("click", () => {
+    modal.remove();
+  });
+};
 const getCompanyFavicon = (url) => {
   if (!url) return "";
   const domain = new URL(url).hostname;
   return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
 };
 
-const createCardElement = ({ companies, experience, location }, index) => {
+const createCardElement = ({ id, companies, experience, location }, index) => {
   const card = document.createElement("div");
   card.classList.add("tinder--card");
-  card.style.zIndex = 100 - index;
+  card.classList.add("card");
 
-  // Card content
+  card.style.zIndex = 100 - index;
+  card.setAttribute("data-id", id);
+
   card.innerHTML = `
   <article>
     <div class="details">
@@ -152,12 +213,27 @@ const resetCardPosition = (card) => {
 };
 
 const handleSwipe = (card, direction) => {
+  const cardId = card.getAttribute("data-id");
   const moveX = direction === "left" ? "-120%" : "120%";
   const rotateDeg = direction === "left" ? "-30deg" : "30deg";
 
   card.style.transition = "transform 0.5s ease, opacity 0.4s ease";
   card.style.transform = `translate(${moveX}, 0) rotate(${rotateDeg})`;
   card.style.opacity = "0";
+
+  // Store the card ID in the appropriate array
+  if (direction === "right") {
+    acceptedUsers.push(cardId);
+
+    // Trigger the modal after 2 "yes" actions and every "yes" action after that
+    if (acceptedUsers.length === 2 || acceptedUsers.length > 2) {
+      showBookCallModal();
+    }
+  } else if (direction === "left") {
+    declinedUsers.push(cardId);
+  }
+
+  updateLocalStorage();
 
   // Load next card below current
   if (currentCardIndex < cardData.length) {
