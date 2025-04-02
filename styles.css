@@ -54,10 +54,36 @@ body {
   align-items: start;
   transition: transform 0.3s ease, opacity 0.3s ease;
   will-change: transform, opacity;
-  cursor: grab;
   user-select: none;
   touch-action: pan-y;
   backdrop-filter: blur(10px);
+}
+.tinder--card.blurred-card {
+  position: absolute;
+  top: 20px;
+  width: 100%;
+  height: 100%;
+  padding: 20px;
+  background-color: white;
+  border-radius: 20px;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  pointer-events: none;
+  filter: blur(5px);
+  opacity: 0.5;
+}
+
+.tinder--card.blurred-card.left {
+  transform: translateX(-120%) rotate(-8deg) scale(0.75);
+  left: 75%;
+}
+
+.tinder--card.blurred-card.right {
+  transform: translateX(120%) rotate(8deg) scale(0.75);
+  left: -75%;
 }
 
 .tinder--card article {
@@ -68,6 +94,9 @@ body {
   align-items: start;
   justify-content: space-between;
   min-height: 272px;
+  user-select: none;
+  pointer-events: none;
+  cursor: grabbing;
 }
 .tinder--card article .card-info {
   gap: 16px;
@@ -166,10 +195,6 @@ body {
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
 }
 
-.tinder--card.grabbing {
-  cursor: grabbing;
-}
-
 .tinder--card.animate {
   transition: transform 0.5s ease, opacity 0.5s ease;
 }
@@ -253,4 +278,25 @@ body {
 }
 .close-modal:hover {
   background: #0056b3;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 999;
+}
+
+.modal-overlay.hidden {
+  display: none;
+}
+
+.hidden {
+  display: none;
 }

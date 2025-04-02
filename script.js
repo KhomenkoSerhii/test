@@ -1,10 +1,50 @@
 const tinderContainer = document.querySelector(".tinder");
 const cardsContainer = document.querySelector(".tinder--cards");
-let currentCardIndex = 0;
+const modalOverlay = document.getElementById("modal-overlay");
 
 const SWIPE_THRESHOLD = 100;
 const CLICK_THRESHOLD = 10;
 
+let currentCardIndex = 0;
+let isModalOpen = false;
+let isSwiping = false; // Add a flag to prevent multiple calls
+
+// Local Storage Keys
+const ACCEPTED_USERS_KEY = "acceptedUsers";
+const DECLINED_USERS_KEY = "declinedUsers";
+
+if (!isModalOpen) {
+  localStorage.removeItem(ACCEPTED_USERS_KEY);
+  localStorage.removeItem(DECLINED_USERS_KEY);
+}
+const acceptedUsers = JSON.parse(localStorage.getItem("acceptedUsers")) || [];
+const declinedUsers = JSON.parse(localStorage.getItem("declinedUsers")) || [];
+
+// Utility Functions
+const updateLocalStorage = () => {
+  localStorage.setItem(ACCEPTED_USERS_KEY, JSON.stringify(acceptedUsers));
+  localStorage.setItem(DECLINED_USERS_KEY, JSON.stringify(declinedUsers));
+};
+
+const getCompanyFavicon = (url) => {
+  if (!url) return "";
+  const domain = new URL(url).hostname;
+  return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
+};
+
+// Modal Functions
+const openModal = () => {
+  isModalOpen = true;
+  modalOverlay.classList.remove("hidden");
+};
+
+const closeModal = () => {
+  isModalOpen = false;
+  modalOverlay.classList.add("hidden");
+};
+
+// temp, waiting: Open the modal after 2 seconds (for demonstration purposes)
+setTimeout(openModal, 2000);
 const cardData = [
   {
     id: "1",
@@ -71,70 +111,96 @@ const cardData = [
     experience: "5",
     location: "Austin, TX",
   },
+  {
+    id: "6",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
+  {
+    id: "7",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
+  {
+    id: "8",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
+  {
+    id: "9",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
+  {
+    id: "10",
+    companies: [
+      {
+        name: "Amazon",
+        position: "UI/UX Designer",
+        url: "https://amazon.com",
+      },
+      {
+        name: "Apple",
+        position: "Full Stack Developer",
+        url: "https://apple.com",
+      },
+    ],
+    experience: "5",
+    location: "Austin, TX",
+  },
 ];
 
-// Initialize arrays to store accepted and declined user IDs
-const acceptedUsers = JSON.parse(localStorage.getItem("acceptedUsers")) || [];
-const declinedUsers = JSON.parse(localStorage.getItem("declinedUsers")) || [];
-
-// Function to update local storage
-const updateLocalStorage = () => {
-  localStorage.setItem("acceptedUsers", JSON.stringify(acceptedUsers));
-  localStorage.setItem("declinedUsers", JSON.stringify(declinedUsers));
-};
-
-const bookACall = () => {
-  window.open("https://calendly.com/callum-calyptus/15m", "_blank");
-};
-
-const continueSwiping = () => {
-  document.querySelector(".modal").remove();
-};
-
-// Function to show the "Book a Call" modal
-const showBookCallModal = () => {
-  const modal = document.createElement("div");
-  modal.classList.add("modal");
-  modal.innerHTML = `
-      <div class="modal-content card">
-        <h2>We have ${acceptedUsers.length} top <br/> matches!</h2>
-        <p>Congrats! Book a call with our Co-Founder now to run through your candidates.</p>
-        <div>
-        <button class="book-call"
-            type="button"
-            onclick="bookACall()"
-        >Book a Call</button>
-        <button
-            class="close-modal"
-            type="button"
-            onclick="continueSwiping()"
-        class="book-call">Continue Swiping</button>
-         </div>
-      </div>
-    `;
-  document.body.appendChild(modal);
-
-  // Close modal functionality
-  const closeModalButton = modal.querySelector(".close-modal");
-  closeModalButton.addEventListener("click", () => {
-    modal.remove();
-  });
-};
-const getCompanyFavicon = (url) => {
-  if (!url) return "";
-  const domain = new URL(url).hostname;
-  return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
-};
-
-const createCardElement = ({ id, companies, experience, location }, index) => {
-  const card = document.createElement("div");
-  card.classList.add("tinder--card");
-  card.classList.add("card");
-
-  card.style.zIndex = 100 - index;
-  card.setAttribute("data-id", id);
-
-  card.innerHTML = `
+// Card Creation
+const baseCard = ({ companies, experience, location }, disabled) => {
+  return `
   <article>
     <div class="details">
       <div class="company">
@@ -176,8 +242,8 @@ const createCardElement = ({ id, companies, experience, location }, index) => {
     </div>
   </article>
 
-  <div class="tinder--buttons">
-    <button class="decline">
+  <div class="tinder--buttons ${disabled ? "hidden" : ""}" >
+    <button class="${disabled ? "" : "decline"}">
       <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D" />
         <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -190,7 +256,7 @@ const createCardElement = ({ id, companies, experience, location }, index) => {
         </defs>
       </svg>
     </button>
-    <button class="approve">
+    <button class="${disabled ? "" : "approve"}">
       <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
         <circle cx="35.8325" cy="35" r="35" fill="url(#paint0_linear_7034_2742)" />
         <path d="M49.8325 24.75L30.5825 44L21.8325 35.25" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -204,15 +270,58 @@ const createCardElement = ({ id, companies, experience, location }, index) => {
     </button>
   </div>
 `;
+};
+const createCardElement = ({ id, companies, experience, location }, index) => {
+  const card = document.createElement("div");
+  card.classList.add("tinder--card");
+  card.classList.add("card");
+
+  card.style.zIndex = 100 - index;
+  card.setAttribute("data-id", id);
+
+  card.innerHTML = baseCard({ companies, experience, location });
   return card;
 };
 
-const resetCardPosition = (card) => {
-  card.style.transition = "transform 0.3s ease";
-  card.style.transform = "translate(0, 0) rotate(0deg)";
+const createBlurredCard = (cardData, zIndex, blurLevel, position) => {
+  const card = document.createElement("div");
+  card.classList.add("tinder--card", "blurred-card", position); // Add "left" or "right" class
+  card.style.zIndex = zIndex;
+  card.style.filter = `blur(${blurLevel}px)`;
+  card.style.opacity = "0.5";
+
+  card.innerHTML = baseCard(cardData, "disabled");
+  return card;
+};
+
+const updateBlurredCards = () => {
+  // Add one blurred card to the left
+  if (currentCardIndex + 1 < cardData.length) {
+    const leftCard = createBlurredCard(
+      cardData[currentCardIndex + 1],
+      -1,
+      5,
+      "left"
+    );
+    cardsContainer.appendChild(leftCard);
+  }
+
+  // Add one blurred card to the right
+  if (currentCardIndex + 2 < cardData.length) {
+    const rightCard = createBlurredCard(
+      cardData[currentCardIndex + 2],
+      -2,
+      5,
+      "right"
+    );
+    cardsContainer.appendChild(rightCard);
+  }
 };
 
 const handleSwipe = (card, direction) => {
+  if (isSwiping) return; // Prevent multiple calls
+  isSwiping = true;
+
   const cardId = card.getAttribute("data-id");
   const moveX = direction === "left" ? "-120%" : "120%";
   const rotateDeg = direction === "left" ? "-30deg" : "30deg";
@@ -245,17 +354,25 @@ const handleSwipe = (card, direction) => {
     initializeCard(nextCard);
     currentCardIndex++;
   }
+  const totalLength = acceptedUsers.length + declinedUsers.length;
 
-  // Remove old after transition
+  if (totalLength === cardData.length) {
+    setTimeout(() => {
+      showBookCallModal();
+    }, 600);
+  }
+
+  // Remove old card after transition
   setTimeout(() => {
     card.remove();
+    isSwiping = false; // Reset the swipe lock
   }, 500);
 };
 
 const initializeCard = (card) => {
-  let isDragging = false;
   let startX = 0;
   let currentX = 0;
+  let isDragging = false; // Track whether a drag operation is in progress
 
   const updatePosition = () => {
     const diffX = currentX - startX;
@@ -271,35 +388,57 @@ const initializeCard = (card) => {
     const diffX = currentX - startX;
     isDragging = false;
 
+    // If the movement is below the CLICK_THRESHOLD, treat it as a click
+    if (Math.abs(diffX) < CLICK_THRESHOLD) {
+      resetCardPosition(card);
+      return;
+    }
+
+    // Otherwise, determine the swipe direction
     if (Math.abs(diffX) > SWIPE_THRESHOLD) {
       handleSwipe(card, diffX > 0 ? "right" : "left");
-    } else if (Math.abs(diffX) < CLICK_THRESHOLD) {
+    } else {
       resetCardPosition(card);
     }
   };
 
+  const article = card.querySelector("article");
+  article.addEventListener("click", (e) => {
+    if (isDragging) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
+  });
+  article.style.pointerEvents = "auto"; // keeps drag working
+
   // Touch Events
-  card.addEventListener("touchstart", (e) => {
+  article.addEventListener("touchstart", (e) => {
     isDragging = true;
     startX = e.touches[0].clientX;
   });
 
-  card.addEventListener("touchmove", (e) => {
+  article.addEventListener("touchmove", (e) => {
     if (isDragging) onDragMove(e.touches[0].clientX);
   });
 
-  card.addEventListener("touchend", () => {
-    if (isDragging) onDragEnd();
+  article.addEventListener("touchend", () => {
+    if (isDragging) {
+      onDragEnd();
+      isDragging = false;
+    }
   });
 
   // Mouse Events
-  card.addEventListener("mousedown", (e) => {
+  article.addEventListener("mousedown", (e) => {
     isDragging = true;
     startX = e.clientX;
 
     const onMouseMove = (e) => onDragMove(e.clientX);
-    const onMouseUp = () => {
-      onDragEnd();
+    const onMouseUp = (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      onDragEnd(e);
+      isDragging = false;
       document.removeEventListener("mousemove", onMouseMove);
       document.removeEventListener("mouseup", onMouseUp);
     };
@@ -308,6 +447,7 @@ const initializeCard = (card) => {
     document.addEventListener("mouseup", onMouseUp);
   });
 
+  // Button Events
   const declineBtn = card.querySelector(".decline");
   const approveBtn = card.querySelector(".approve");
 
@@ -320,6 +460,60 @@ const initializeCard = (card) => {
     e.stopPropagation();
     handleSwipe(card, "right");
   });
+};
+const bookACall = () => {
+  window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+  const totalLength = acceptedUsers.length + declinedUsers.length;
+  const modal = document.querySelector(".modal");
+  modal.remove();
+  if (totalLength === cardData.length) {
+    closeModal();
+  }
+};
+
+const continueSwiping = () => {
+  document.querySelector(".modal").remove();
+  const totalLength = acceptedUsers.length + declinedUsers.length;
+
+  if (totalLength === cardData.length) {
+    closeModal();
+  }
+};
+
+// Function to show the "Book a Call" modal
+const showBookCallModal = () => {
+  const totalLength = acceptedUsers.length + declinedUsers.length;
+
+  const modal = document.createElement("div");
+  modal.classList.add("modal");
+  modal.innerHTML = `
+      <div class="modal-content card">
+        <h2>We have ${acceptedUsers.length} top <br/> matches!</h2>
+        <p>Congrats! Book a call with our Co-Founder now to run through your candidates.</p>
+        <div>
+        <button class="book-call"
+            type="button"
+            onclick="bookACall()"
+        >Book a Call</button>
+        <button
+            class="close-modal"
+            type="button"
+            onclick="continueSwiping()"
+        class="book-call">
+        ${
+          totalLength !== cardData.length ? "Continue Swiping" : "Close Swiping"
+        }
+       
+        </button>
+         </div>
+      </div>
+    `;
+  document.body.appendChild(modal);
+};
+
+const resetCardPosition = (card) => {
+  card.style.transition = "transform 0.3s ease";
+  card.style.transform = "translate(0, 0) rotate(0deg)";
 };
 
 const showInitialCards = (count = 2) => {
@@ -354,3 +548,4 @@ document.addEventListener("keydown", (event) => {
   }
 });
 showInitialCards();
+updateBlurredCards();
