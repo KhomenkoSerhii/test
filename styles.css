@@ -95,7 +95,6 @@ body {
   justify-content: space-between;
   min-height: 272px;
   user-select: none;
-  pointer-events: none;
   cursor: grabbing;
 }
 .tinder--card article .card-info {

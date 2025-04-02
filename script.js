@@ -17,8 +17,10 @@ if (!isModalOpen) {
   localStorage.removeItem(ACCEPTED_USERS_KEY);
   localStorage.removeItem(DECLINED_USERS_KEY);
 }
-const acceptedUsers = JSON.parse(localStorage.getItem("acceptedUsers")) || [];
-const declinedUsers = JSON.parse(localStorage.getItem("declinedUsers")) || [];
+const acceptedUsers =
+  JSON.parse(localStorage.getItem(ACCEPTED_USERS_KEY)) || [];
+const declinedUsers =
+  JSON.parse(localStorage.getItem(DECLINED_USERS_KEY)) || [];
 
 // Utility Functions
 const updateLocalStorage = () => {
@@ -43,7 +45,7 @@ const closeModal = () => {
   modalOverlay.classList.add("hidden");
 };
 
-// temp, waiting: Open the modal after 2 seconds (for demonstration purposes)
+// temp, waiting API: Open the modal after 2 seconds (for demonstration purposes)
 setTimeout(openModal, 2000);
 const cardData = [
   {
@@ -365,14 +367,14 @@ const handleSwipe = (card, direction) => {
   // Remove old card after transition
   setTimeout(() => {
     card.remove();
-    isSwiping = false; // Reset the swipe lock
+    isSwiping = false;
   }, 500);
 };
 
 const initializeCard = (card) => {
   let startX = 0;
   let currentX = 0;
-  let isDragging = false; // Track whether a drag operation is in progress
+  let isDragging = false;
 
   const updatePosition = () => {
     const diffX = currentX - startX;
@@ -384,7 +386,7 @@ const initializeCard = (card) => {
     requestAnimationFrame(updatePosition);
   };
 
-  const onDragEnd = () => {
+  const onDragEnd = (e) => {
     const diffX = currentX - startX;
     isDragging = false;
 
@@ -394,7 +396,7 @@ const initializeCard = (card) => {
       return;
     }
 
-    // Otherwise, determine the swipe direction
+    // If the movement exceeds the SWIPE_THRESHOLD, trigger a swipe
     if (Math.abs(diffX) > SWIPE_THRESHOLD) {
       handleSwipe(card, diffX > 0 ? "right" : "left");
     } else {
@@ -409,7 +411,6 @@ const initializeCard = (card) => {
       e.stopPropagation();
     }
   });
-  article.style.pointerEvents = "auto"; // keeps drag working
 
   // Touch Events
   article.addEventListener("touchstart", (e) => {
@@ -435,8 +436,6 @@ const initializeCard = (card) => {
 
     const onMouseMove = (e) => onDragMove(e.clientX);
     const onMouseUp = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
       onDragEnd(e);
       isDragging = false;
       document.removeEventListener("mousemove", onMouseMove);
