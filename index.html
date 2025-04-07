@@ -3,16 +3,1166 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Tinder Cards</title>
-    <link rel="stylesheet" href="styles.css" />
+    <title>Chat Form</title>
+    <style>
+      body {
+        font-family: Manrope, sans-serif;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background-color: #f4f4f4;
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      .chat-form {
+        position: relative;
+        width: 864px;
+        max-width: 100%;
+        display: flex;
+        flex-direction: column;
+        border-radius: 20px;
+        border: 1px solid #565656;
+        background: #171717;
+        overflow: hidden;
+        box-shadow: 0px 4px 10px 0px rgba(0, 0, 0, 0.1);
+      }
+      #chatbox {
+        font-family: Manrope, sans-serif;
+        border: none;
+        height: 500px; /* Increased height */
+        resize: none;
+        font-size: 16px;
+        padding: 20px;
+        background: transparent;
+        color: white;
+        overflow-y: auto;
+      }
+      #chatbox:focus {
+        outline: none;
+      }
+      #chatbox::placeholder {
+        color: #565656;
+      }
+      #chatbox::-webkit-scrollbar {
+        width: 12px;
+      }
+      #chatbox::-webkit-scrollbar-track {
+        background: #2c2c2c;
+      }
+      #chatbox::-webkit-scrollbar-thumb {
+        background-color: #6a5bcd;
+        border-radius: 10px;
+        border: 3px solid #171717;
+      }
+      #chatbox {
+        scrollbar-width: thin;
+        scrollbar-color: #6a5bcd #171717;
+      }
+      #userInput {
+        padding: 20px 65px 20px 20px;
+        font-size: 16px;
+        border: none;
+        background: #2c2c2c !important;
+        color: white !important;
+      }
+      #userInput:focus {
+        outline: none;
+      }
+      .message {
+        display: flex;
+        margin: 10px 0;
+      }
+      .message.user {
+        justify-content: flex-end;
+      }
+      .message.bot {
+        justify-content: flex-start;
+      }
+      .message .bubble {
+        max-width: 60%;
+        padding: 10px;
+        border-radius: 10px;
+      }
+      .message.user .bubble {
+        background-color: #2c2c2c;
+        color: white;
+      }
+      .message.bot .bubble {
+        background-color: #565656;
+        color: white;
+      }
+      .submit-btn {
+        width: 40px;
+        height: 40px;
+        text-align: center;
+        background: #6a5bcd;
+        border: 1px solid #887bd7;
+        border-radius: 50%;
+        position: absolute;
+        bottom: 20px;
+        right: 20px;
+        cursor: pointer;
+      }
+      .loader {
+        border: 2px solid #f3f3f3;
+        border-top: 2px solid #6a5bcd;
+        border-radius: 50%;
+        width: 18px;
+        height: 18px;
+        animation: spin 1.5s linear infinite;
+        margin-left: 10px;
+      }
+
+      a {
+        color: #6a5bcd;
+        text-decoration: none;
+        cursor: pointer;
+      }
+      input:-webkit-autofill {
+        -webkit-box-shadow: 0 0 0 30px #2c2c2c inset !important;
+        -webkit-text-fill-color: white !important;
+      }
+
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
+
+      /* Tinder cards */
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+
+      body {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        background: linear-gradient(
+          9deg,
+          #0e0e0a -27.6%,
+          #110e07 40.47%,
+          #4101aa 103.1%,
+          #1f0502 103.1%
+        );
+
+        overflow-x: hidden;
+        font-family: "Manrope", sans-serif;
+        box-sizing: border-box;
+      }
+
+      .tinder {
+        position: relative;
+        width: 500px;
+        height: 500px;
+      }
+
+      .tinder--cards {
+        position: absolute;
+        width: 100%;
+        height: 100%;
+      }
+
+      .card {
+        width: 480px;
+        min-height: 466px;
+        background-color: white;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        padding: 35px;
+        border-radius: 20px;
+        border: 1px solid #deb4fe;
+      }
+
+      .tinder--card {
+        gap: 32px;
+        text-align: center;
+        position: absolute;
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
+        align-items: start;
+        transition: transform 0.3s ease, opacity 0.3s ease;
+        will-change: transform, opacity;
+        user-select: none;
+        touch-action: pan-y;
+        backdrop-filter: blur(10px);
+      }
+      .tinder--card.blurred-card {
+        position: absolute;
+        top: 20px;
+        width: 100%;
+        height: 100%;
+        padding: 20px;
+        background-color: white;
+        border-radius: 20px;
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        pointer-events: none;
+        filter: blur(5px);
+        opacity: 0.5;
+      }
+
+      .tinder--card.blurred-card.left {
+        transform: translateX(-120%) rotate(-8deg) scale(0.75);
+        left: 75%;
+      }
+
+      .tinder--card.blurred-card.right {
+        transform: translateX(120%) rotate(8deg) scale(0.75);
+        left: -75%;
+      }
+
+      .tinder--card article {
+        gap: 42px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+        justify-content: space-between;
+        min-height: 272px;
+        user-select: none;
+        cursor: grabbing;
+      }
+      .tinder--card article .card-info {
+        gap: 16px;
+        width: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: start;
+      }
+      .tinder--card h3 {
+        color: #0c0e0c;
+        font-size: 18px;
+        font-weight: 500;
+      }
+
+      .tinder--card h1 {
+        color: #0c0e0c;
+        font-size: 35px;
+        font-weight: 700;
+      }
+      .tinder--card .details {
+        display: flex;
+        flex-direction: column;
+        gap: 22px;
+        width: 100%;
+      }
+      .tinder--card .details .company {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 16px;
+      }
+      .tinder--card .details .company .company--header {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+
+      .tinder--card img {
+        width: 22px;
+        height: 22px;
+      }
+
+      .tinder--card .additional {
+        border-bottom: 1px solid #e0e0e0;
+        padding-bottom: 6px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+
+      .tinder--card .additional p {
+        color: #a5a7a5;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .tinder--card .additional span {
+        color: #383d3a;
+        font-size: 16px;
+        font-weight: 500;
+      }
+      .tinder--card .additional > div {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+      }
+      .tinder--card .additional > div p {
+        text-align: start;
+      }
+      .tinder--card .additional > div > div {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        justify-content: flex-end;
+      }
+      .tinder--card .additional > div > div:last-child {
+        text-align: end;
+      }
+      .tinder--card .additional > div > div img {
+        margin-left: 6px;
+      }
+
+      .tinder--buttons {
+        display: flex;
+        gap: 32px;
+        justify-content: center;
+        width: 100%;
+        margin-top: 20px;
+      }
+
+      .tinder--buttons button {
+        padding: 0;
+        border: none;
+        width: 70px;
+        height: 70px;
+        background: transparent;
+        cursor: pointer;
+        border-radius: 50%;
+        transition: box-shadow 0.3s ease;
+      }
+
+      .tinder--buttons button:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .tinder--card.animate {
+        transition: transform 0.5s ease, opacity 0.5s ease;
+      }
+
+      /* "Book a Call" modal */
+      .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+        backdrop-filter: blur(10px);
+      }
+      .modal-content {
+        display: flex;
+        flex-direction: column;
+        gap: 32px;
+        text-align: center;
+        justify-content: center;
+      }
+      .modal-content h2 {
+        color: #0c0e0c;
+        font-size: 40px;
+        font-weight: 600;
+      }
+      .modal-content p {
+        color: #0c0e0c;
+        font-size: 16px;
+        font-style: normal;
+        font-weight: 400;
+        line-height: normal;
+      }
+      .modal-content div {
+        display: flex;
+        gap: 10px;
+      }
+      .modal-content div button {
+        font-size: 18px;
+        font-weight: 500;
+        line-height: 140%;
+        display: flex;
+        height: 50px;
+        padding: 11.213px 22.427px;
+        justify-content: center;
+        align-items: center;
+        gap: 11.213px;
+        flex: 1 0 0;
+        border-radius: 93.445px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+      }
+      .modal-content div button:first-child {
+        color: #fff;
+        border: 1px solid #d85bff;
+        background: linear-gradient(92deg, #9747ff 1.45%, #da47ff 96.73%);
+      }
+      .modal-content div button:first-child:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+
+      .modal-content div button:last-child {
+        color: #02b140;
+        border: 1px solid #02b140;
+        background: #fff;
+      }
+      .modal-content div button:last-child:hover {
+        box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      }
+      .close-modal {
+        padding: 10px 20px;
+        background: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+      }
+      .close-modal:hover {
+        background: #0056b3;
+      }
+
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 999;
+        background: linear-gradient(
+          9deg,
+          #0e0e0a -27.6%,
+          #110e07 40.47%,
+          #4101aa 103.1%,
+          #1f0502 103.1%
+        );
+      }
+
+      .modal-overlay.hidden {
+        display: none;
+      }
+      .hidden {
+        display: none !important;
+      }
+    </style>
   </head>
   <body>
+    <form class="chat-form" onsubmit="handleSubmit(event)">
+      <div id="chatbox"></div>
+      <input
+        type="text"
+        id="userInput"
+        placeholder="Paste the job description here"
+      />
+      <button class="submit-btn button chat" type="submit">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="24"
+          height="25"
+          viewBox="0 0 24 25"
+          fill="none"
+        >
+          <path
+            d="M5 12.6121L12 5.61206L19 12.6121"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+          <path
+            d="M12 19.6121V5.61206"
+            stroke="white"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+      </button>
+    </form>
     <div class="modal-overlay hidden" id="modal-overlay">
       <div class="tinder" id="tinder-modal">
         <div class="tinder--cards"></div>
       </div>
     </div>
+    <script>
+      let cardData = [];
+      const SWIPE_THRESHOLD = 100;
+      const CLICK_THRESHOLD = 10;
+      let isModalOpen = false;
+      const modalOverlay = document.getElementById("modal-overlay");
 
-    <script src="script.js"></script>
+      if (!isModalOpen) {
+        localStorage.removeItem("usersData");
+      }
+      const usersData = JSON.parse(localStorage.getItem("usersData")) || {
+        acceptedUsers: [],
+        declinedUsers: [],
+      };
+
+      // Access the arrays
+      const acceptedUsers = usersData.acceptedUsers;
+      const declinedUsers = usersData.declinedUsers;
+
+      // document.addEventListener("DOMContentLoaded", function () {
+      const form = document.querySelector(".chat-form");
+      const submitButton = document.querySelector(".button.chat");
+
+      // Prevent default form submission
+      form.addEventListener("submit", function (event) {
+        event.preventDefault();
+        handleSubmit();
+      });
+
+      // Trigger submission when the button is clicked
+      submitButton.addEventListener("click", function (event) {
+        event.preventDefault();
+        handleSubmit();
+      });
+
+      function generateSessionId(length) {
+        const array = new Uint32Array(length);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, (dec) =>
+          ("0" + dec.toString(16)).substr(-2)
+        ).join("");
+      }
+
+      const sessionId = generateSessionId(32);
+
+      function convertMarkdownToHtml(markdown) {
+        if (markdown.includes("http") || markdown.includes("https")) {
+          markdown = markdown.replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" target="_blank">$1</a>'
+          );
+        } else {
+          markdown = markdown.replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="https://$2" target="_blank">$1</a>'
+          );
+        }
+
+        markdown = markdown.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        markdown = markdown.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+        markdown = markdown
+          .replace(/(?:\r\n|\r|\n){2,}/g, "<br><br>")
+          .replace(/(?:\r\n|\r|\n)/g, "<br>");
+        return markdown;
+      }
+
+      function splitSentences(text) {
+        if (
+          text.toLowerCase().includes("skills required") ||
+          text.toLowerCase().includes("experience required") ||
+          text.toLowerCase().includes("salary expectation") ||
+          text.toLowerCase().includes("location (or if it's a remote position)")
+        ) {
+          return text;
+        }
+        return text
+          .split(/(?<!\w\.\w.)(?<![A-Z][a-z]\.)(?<=\.|\?)\s/)
+          .map((sentence) => {
+            const trimmedSentence = sentence.toLowerCase().trim();
+            if (
+              trimmedSentence.toLowerCase().includes("skills required") ||
+              trimmedSentence.toLowerCase().includes("experience required") ||
+              trimmedSentence.toLowerCase().includes("salary expectation") ||
+              trimmedSentence
+                .toLowerCase()
+                .includes("location (or if it's a remote position)")
+            ) {
+              return sentence;
+            }
+            return sentence + "<br>";
+          })
+          .join("");
+      }
+
+      function convertTextToLinks(text) {
+        const urlRegex = /(https?:\/\/[^\s]+)/g;
+        return text
+          .split(urlRegex)
+          .map((part) => {
+            if (urlRegex.test(part)) {
+              if (part.includes("http") || part.includes("https")) {
+                return `<a href="${part}" target="_blank">${part}</a>`;
+              } else {
+                return `<a href="https://${part}" target="_blank">${part}</a>`;
+              }
+            }
+            return part;
+          })
+          .join("");
+      }
+      // Function to show the "Book a Call" modal
+      const showBookCallModal = (candidates) => {
+        const totalLength = acceptedUsers.length + declinedUsers.length;
+
+        const modal = document.createElement("div");
+        modal.classList.add("modal");
+        modal.innerHTML = `
+            <div class="modal-content card">
+              <h2 class="${candidates?.length ? "" : "hidden"}">We have ${
+          acceptedUsers.length
+        } top <br/> matches!</h2>
+              <p>
+                ${
+                  candidates?.length
+                    ? "Congrats! Book a call with our Co-Founder now to run through your candidates."
+                    : "No perfect matches — book a call with our team so we can better understand your needs and find the right fit"
+                }</p>
+              <div>
+              <button class="book-call"
+                  type="button"
+                  onclick="bookACall()"
+              >Book a Call</button>
+              <button
+                  class="close-modal ${candidates?.length > 0 ? "" : "hidden"}"
+                  type="button"
+                  onclick="continueSwiping()"
+              class="book-call">
+              ${
+                totalLength !== cardData.length
+                  ? "Continue Swiping"
+                  : "Close Swiping"
+              }
+            
+              </button>
+              </div>
+            </div>
+          `;
+        document.body.appendChild(modal);
+      };
+
+      function handleSubmit() {
+        let userInput = document.getElementById("userInput").value;
+        if (userInput.trim() === "") return;
+
+        let chatbox = document.getElementById("chatbox");
+
+        // Display user's message
+        let userMessage = document.createElement("div");
+        userMessage.className = "message user";
+        userMessage.innerHTML = `<div class="bubble">${convertTextToLinks(
+          userInput.replace(/\n/g, "<br>")
+        )}</div>`;
+        chatbox.appendChild(userMessage);
+
+        // Show loading indicator
+        let loader = document.createElement("div");
+        loader.className = "loader";
+        let botMessage = document.createElement("div");
+        botMessage.className = "message bot";
+        botMessage.appendChild(loader);
+        chatbox.appendChild(botMessage);
+        chatbox.scrollTop = chatbox.scrollHeight;
+
+        // Send request to webhook
+        fetch(
+          "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462",
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              sessionId: sessionId,
+              message: userInput,
+            }),
+          }
+        )
+          .then((response) => response.json())
+          .then((data) => {
+            const botReply = convertMarkdownToHtml(data.reply);
+
+            if (data.reply.includes("jobfilter")) {
+              const cleanedReply = data.reply
+                .replace(/```json/g, "")
+                .replace(/```/g, "")
+                .trim();
+
+              const parsedData = JSON.parse(cleanedReply);
+              const { type, ...rest } = parsedData;
+              if (rest.location) {
+                rest.location = rest.location.replace(/[()]/g, "").trim(); // Remove parentheses and trim whitespace
+              }
+              const queryString = new URLSearchParams(rest).toString();
+              fetch(
+                `https://api.calyptus.co/api/tinder-matching?${queryString}`,
+                {
+                  method: "GET",
+                  headers: {
+                    "Content-Type": "application/json",
+                  },
+                }
+              )
+                .then((response) => response.json())
+                .then((data) => {
+                  if (!data.data || data.data.length === 0) {
+                    botMessage.innerHTML = `<div class="bubble">No candidates found.</div>`;
+                    chatbox.scrollTop = chatbox.scrollHeight;
+                    showBookCallModal(data.data);
+                    // botMessage.removeChild(loader);
+                    return;
+                  }
+
+                  generateTinderModal(data.data);
+                })
+                .catch((error) => {
+                  console.error("Error fetching Tinder data:", error);
+                });
+
+              botMessage.removeChild(loader);
+              document.getElementById("userInput").disabled = true;
+              const submitBtn = document.querySelector(".submit-btn");
+              submitBtn.innerHTML = "";
+              const reloadSvg = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "svg"
+              );
+              reloadSvg.setAttribute("width", "15");
+              reloadSvg.setAttribute("height", "15");
+              reloadSvg.setAttribute("viewBox", "0 0 15 15");
+              reloadSvg.setAttribute("x", "0");
+              reloadSvg.setAttribute("y", "0");
+              reloadSvg.setAttribute("fill", "none");
+              reloadSvg.innerHTML = `
+               <path d="M13.9997 7.33325C13.8229 7.33325 13.6533 7.40349 13.5283 7.52851C13.4032 7.65354 13.333 7.82311 13.333 7.99992C13.3409 9.2486 12.9132 10.461 12.1234 11.4282C11.3337 12.3955 10.2314 13.057 9.00632 13.299C7.78127 13.5409 6.5102 13.3481 5.41201 12.7538C4.31383 12.1594 3.45728 11.2007 2.98989 10.0428C2.5225 8.88481 2.47354 7.60013 2.85142 6.40997C3.22931 5.21981 4.01039 4.19867 5.06014 3.52244C6.1099 2.8462 7.36261 2.55719 8.60252 2.70519C9.84243 2.85319 10.9919 3.42893 11.853 4.33325H10.253C10.0762 4.33325 9.90663 4.40349 9.78161 4.52851C9.65658 4.65354 9.58634 4.82311 9.58634 4.99992C9.58634 5.17673 9.65658 5.3463 9.78161 5.47132C9.90663 5.59635 10.0762 5.66658 10.253 5.66658H13.273C13.4498 5.66658 13.6194 5.59635 13.7444 5.47132C13.8694 5.3463 13.9397 5.17673 13.9397 4.99992V1.99992C13.9397 1.82311 13.8694 1.65354 13.7444 1.52851C13.6194 1.40349 13.4498 1.33325 13.273 1.33325C13.0962 1.33325 12.9266 1.40349 12.8016 1.52851C12.6766 1.65354 12.6063 1.82311 12.6063 1.99992V3.17992C11.4961 2.11862 10.0535 1.47322 8.52235 1.3528C6.9912 1.23239 5.46543 1.64435 4.20296 2.51905C2.94048 3.39374 2.01875 4.67752 1.59356 6.15338C1.16837 7.62923 1.26582 9.20663 1.86942 10.6189C2.47301 12.0312 3.54574 13.1918 4.90627 13.9045C6.2668 14.6171 7.83168 14.8382 9.33637 14.5302C10.8411 14.2223 12.1933 13.4042 13.1644 12.2144C14.1356 11.0245 14.6661 9.5358 14.6663 7.99992C14.6663 7.82311 14.5961 7.65354 14.4711 7.52851C14.3461 7.40349 14.1765 7.33325 13.9997 7.33325Z" fill="#fff"/>
+              `;
+              submitBtn.appendChild(reloadSvg);
+              submitBtn.onclick = () => {
+                window.location.reload();
+                chatbox.innerHTML = "";
+                sessionId = generateSessionId(32);
+              };
+            } else {
+              botMessage.removeChild(loader);
+              botMessage.innerHTML = `<div class="bubble">${splitSentences(
+                convertMarkdownToHtml(data.reply)
+              )}</div>`;
+              chatbox.scrollTop = chatbox.scrollHeight;
+            }
+          })
+          .catch((error) => {
+            botMessage.removeChild(loader);
+            botMessage.innerHTML = `<div class="bubble">Sorry, there was an error processing your request.</div>`;
+            chatbox.appendChild(botMessage);
+            chatbox.scrollTop = chatbox.scrollHeight;
+          });
+
+        // Clear input field
+        document.getElementById("userInput").value = "";
+        chatbox.scrollTop = chatbox.scrollHeight;
+      }
+
+      document
+        .getElementById("userInput")
+        .addEventListener("input", function () {
+          this.placeholder = "";
+        });
+
+      // Tinder Cards
+
+      const closeModal = () => {
+        isModalOpen = false;
+        modalOverlay.classList.add("hidden");
+      };
+
+      const bookACall = async () => {
+        const data = {
+          candidates_shown: cardData.length,
+          candidates_selected: [...acceptedUsers.map((user) => user.id)],
+          candidates_rejected: [...declinedUsers.map((user) => user.id)],
+        };
+        // fetch(
+        //   "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462",
+        //   {
+        //     method: "POST",
+        //     headers: {
+        //       "Content-Type": "application/json",
+        //     },
+        //     body: JSON.stringify({
+        //       sessionId: sessionId,
+        //       // message: localStorage.getItem("usersData")
+        //       message: JSON.stringify(usersData),
+        //     }),
+        //   }
+        // )
+        //   .then((response) => response.json())
+        //   .then((data) => {
+        //     console.log(data);
+        //   });
+
+        window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+        const totalLength = acceptedUsers.length + declinedUsers.length;
+        const modal = document.querySelector(".modal");
+        modal.remove();
+        if (totalLength === cardData.length) {
+          closeModal();
+          localStorage.removeItem("usersData");
+        }
+      };
+
+      const continueSwiping = () => {
+        document.querySelector(".modal").remove();
+        const totalLength = acceptedUsers.length + declinedUsers.length;
+
+        if (totalLength === cardData.length) {
+          closeModal();
+          localStorage.removeItem("usersData");
+        }
+      };
+
+      // Utility Functions
+      const updateLocalStorage = () => {
+        localStorage.setItem("usersData", JSON.stringify(usersData));
+      };
+
+      function generateTinderModal(candidates) {
+        let currentCardIndex = 0;
+        let isSwiping = false; // Add a flag to prevent multiple calls
+        const tinderContainer = document.querySelector(".tinder");
+        const cardsContainer = document.querySelector(".tinder--cards");
+        cardData.push(...candidates);
+        setTimeout(() => {
+          isModalOpen = true;
+          modalOverlay.classList.remove("hidden");
+        }, 100);
+
+        const getCompanyFavicon = (url) => {
+          if (!url) return "";
+          const domain = new URL(url).hostname;
+          return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
+        };
+
+        // Card Creation
+        const baseCard = (
+          { experiences, countries, experience_years },
+          disabled
+        ) => {
+          return `
+  <article>
+    <div class="details">
+      <div class="company">
+        <div class="company--header ${
+          experiences?.[0].logo_url ? "" : "hidden"
+        }">
+          <img src="${getCompanyFavicon(
+            experiences?.[0].logo_url
+          )}" alt="Company Logo" />
+          <h3>${experiences?.[0].title}</h3>
+        </div>
+        <h1>${experiences?.[0].position}</h1>
+      </div>
+    </div>
+
+    <div class="card-info">
+    <div class="additional ${experiences?.[1]?.position ? "" : "hidden"}">
+      <div>
+        <p>Previous role:</p>
+        <div>
+          <span>${experiences?.[1]?.position} &nbsp</span>
+          <span>${experiences?.[1]?.title}</span>
+          <img src="${getCompanyFavicon(
+            experiences?.[1]?.logo_url
+          )}" alt="Company Logo" 
+            class="${experiences?.[1]?.logo_url ? "" : "hidden"}"
+          />
+        </div>
+      </div>
+    </div>
+
+    <div class="additional">
+      <p>Location:</p>
+      <span>${countries?.join(", ")}</span>
+    </div>
+
+    <div class="additional">
+      <p>Experience:</p>
+      <span>${experience_years} ${
+            experience_years > 1 ? "yrs" : "year"
+          } of experience</span>
+
+        
+    </div>
+    </div>
+  </article>
+
+  <div class="tinder--buttons ${disabled ? "hidden" : ""}" >
+    <button class="${disabled ? "" : "decline"}">
+      <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D" />
+        <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        <path d="M25.3325 24.75L46.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        <defs>
+          <linearGradient id="paint0_linear_7034_2746" x1="70.8325" y1="70" x2="32.0857" y2="4.27577" gradientUnits="userSpaceOnUse">
+            <stop stop-color="white" />
+            <stop offset="1" stop-color="white" stop-opacity="0.6" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </button>
+    <button class="${disabled ? "" : "approve"}">
+      <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="35.8325" cy="35" r="35" fill="url(#paint0_linear_7034_2742)" />
+        <path d="M49.8325 24.75L30.5825 44L21.8325 35.25" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+        <defs>
+          <linearGradient id="paint0_linear_7034_2742" x1="70.8325" y1="70" x2="41.0133" y2="-15.9787" gradientUnits="userSpaceOnUse">
+            <stop stop-color="#00B140" />
+            <stop offset="1" stop-color="#84F998" />
+          </linearGradient>
+        </defs>
+      </svg>
+    </button>
+  </div>
+`;
+        };
+
+        const createCardElement = (
+          { id, experiences, countries, experience_years },
+          index
+        ) => {
+          const card = document.createElement("div");
+          card.classList.add("tinder--card");
+          card.classList.add("card");
+
+          card.style.zIndex = 100 - index;
+          card.setAttribute("data-id", id);
+
+          card.innerHTML = baseCard({
+            experiences,
+            countries,
+            experience_years,
+          });
+          return card;
+        };
+
+        const createBlurredCard = (candidates, zIndex, blurLevel, position) => {
+          const card = document.createElement("div");
+          card.classList.add("tinder--card", "blurred-card", position); // Add "left" or "right" class
+          card.style.zIndex = zIndex;
+          card.style.filter = `blur(${blurLevel}px)`;
+          card.style.opacity = "0.5";
+
+          card.innerHTML = baseCard(candidates, "disabled");
+          return card;
+        };
+
+        const updateBlurredCards = () => {
+          // Add one blurred card to the left
+          if (currentCardIndex + 1 < candidates.length) {
+            const leftCard = createBlurredCard(candidates[0], -1, 5, "left");
+            cardsContainer.appendChild(leftCard);
+          }
+
+          // Add one blurred card to the right
+          if (currentCardIndex + 2 < candidates.length) {
+            const rightCard = createBlurredCard(
+              candidates[candidates.length > 1 ? 1 : 0],
+              -2,
+              5,
+              "right"
+            );
+            cardsContainer.appendChild(rightCard);
+          }
+        };
+
+        const handleSwipe = (card, direction) => {
+          if (isSwiping) return; // Prevent multiple calls
+          isSwiping = true;
+          const cardId = card.getAttribute("data-id");
+          const moveX = direction === "left" ? "-120%" : "120%";
+          const rotateDeg = direction === "left" ? "-30deg" : "30deg";
+
+          card.style.transition = "transform 0.5s ease, opacity 0.4s ease";
+          card.style.transform = `translate(${moveX}, 0) rotate(${rotateDeg})`;
+          card.style.opacity = "0";
+
+          const currUser = candidates[currentCardIndex - 1];
+
+          if (direction === "right") {
+            acceptedUsers.push(currUser);
+
+            // Trigger the modal after 2 "yes" actions and every "yes" action after that
+            if (acceptedUsers.length === 2 || acceptedUsers.length > 2) {
+              showBookCallModal(candidates);
+            }
+          } else if (direction === "left") {
+            declinedUsers.push(currUser);
+          }
+
+          updateLocalStorage();
+
+          // Load next card below current
+          if (currentCardIndex < candidates.length) {
+            const nextCard = createCardElement(
+              candidates[currentCardIndex],
+              currentCardIndex
+            );
+            cardsContainer.insertBefore(nextCard, cardsContainer.firstChild);
+            initializeCard(nextCard);
+            currentCardIndex++;
+          }
+          const totalLength = acceptedUsers.length + declinedUsers.length;
+
+          if (totalLength === candidates.length) {
+            setTimeout(() => {
+              showBookCallModal(candidates);
+            }, 600);
+          }
+
+          // Remove old card after transition
+          setTimeout(() => {
+            card.remove();
+            isSwiping = false;
+          }, 500);
+        };
+
+        const initializeCard = (card) => {
+          let startX = 0;
+          let currentX = 0;
+          let isDragging = false;
+
+          const updatePosition = () => {
+            const diffX = currentX - startX;
+            card.style.transform = `translate(${diffX}px, 0) rotate(${
+              diffX * 0.1
+            }deg)`;
+          };
+
+          const onDragMove = (x) => {
+            currentX = x;
+            requestAnimationFrame(updatePosition);
+          };
+
+          const onDragEnd = (e) => {
+            const diffX = currentX - startX;
+            isDragging = false;
+
+            // If the movement is below the CLICK_THRESHOLD, treat it as a click
+            if (Math.abs(diffX) < CLICK_THRESHOLD) {
+              resetCardPosition(card);
+              return;
+            }
+
+            // If the movement exceeds the SWIPE_THRESHOLD, trigger a swipe
+            if (Math.abs(diffX) > SWIPE_THRESHOLD) {
+              handleSwipe(card, diffX > 0 ? "right" : "left");
+            } else {
+              resetCardPosition(card);
+            }
+          };
+
+          const article = card.querySelector("article");
+          article.addEventListener("click", (e) => {
+            if (isDragging) {
+              e.preventDefault();
+              e.stopPropagation();
+            }
+          });
+
+          // Touch Events
+          article.addEventListener("touchstart", (e) => {
+            isDragging = true;
+            startX = e.touches[0].clientX;
+          });
+
+          article.addEventListener("touchmove", (e) => {
+            if (isDragging) onDragMove(e.touches[0].clientX);
+          });
+
+          article.addEventListener("touchend", () => {
+            if (isDragging) {
+              onDragEnd();
+              isDragging = false;
+            }
+          });
+
+          // Mouse Events
+          article.addEventListener("mousedown", (e) => {
+            isDragging = true;
+            startX = e.clientX;
+
+            const onMouseMove = (e) => onDragMove(e.clientX);
+            const onMouseUp = (e) => {
+              onDragEnd(e);
+              isDragging = false;
+              document.removeEventListener("mousemove", onMouseMove);
+              document.removeEventListener("mouseup", onMouseUp);
+            };
+
+            document.addEventListener("mousemove", onMouseMove);
+            document.addEventListener("mouseup", onMouseUp);
+          });
+
+          // Button Events
+          const declineBtn = card.querySelector(".decline");
+          const approveBtn = card.querySelector(".approve");
+
+          declineBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleSwipe(card, "left");
+          });
+
+          approveBtn.addEventListener("click", (e) => {
+            e.stopPropagation();
+            handleSwipe(card, "right");
+          });
+        };
+
+        const resetCardPosition = (card) => {
+          card.style.transition = "transform 0.3s ease";
+          card.style.transform = "translate(0, 0) rotate(0deg)";
+        };
+
+        const showInitialCards = (count = 2) => {
+          for (
+            let i = 0;
+            i < count && currentCardIndex < candidates.length;
+            i++
+          ) {
+            const card = createCardElement(
+              candidates[currentCardIndex],
+              currentCardIndex
+            );
+            cardsContainer.appendChild(card);
+            initializeCard(card);
+            currentCardIndex++;
+          }
+        };
+        const removeCardWithHighestZIndex = (direction) => {
+          const cards = [...document.querySelectorAll(".tinder--card")];
+          if (cards.length === 0) return;
+
+          const topCard = cards.reduce((highest, card) => {
+            const currentZ = parseInt(
+              window.getComputedStyle(card).zIndex || "0"
+            );
+            const highestZ = parseInt(
+              window.getComputedStyle(highest).zIndex || "0"
+            );
+            return currentZ > highestZ ? card : highest;
+          }, cards[0]);
+
+          handleSwipe(topCard, direction);
+        };
+
+        document.addEventListener("keydown", (event) => {
+          if (event.key === "ArrowRight") {
+            removeCardWithHighestZIndex("right");
+          } else if (event.key === "ArrowLeft") {
+            removeCardWithHighestZIndex("left");
+          }
+        });
+        showInitialCards();
+        updateBlurredCards();
+      }
+    </script>
   </body>
 </html>
