@@ -426,6 +426,8 @@
 
       .modal-overlay {
         position: fixed;
+        display: flex;
+        flex-direction: column;
         top: 0;
         left: 0;
         width: 100%;
@@ -433,6 +435,7 @@
         background: rgba(0, 0, 0, 0.5);
         display: flex;
         justify-content: center;
+        gap: 41px;
         align-items: center;
         z-index: 999;
         background: linear-gradient(
@@ -442,6 +445,13 @@
           #4101aa 103.1%,
           #1f0502 103.1%
         );
+      }
+      .modal-overlay h2 {
+        color: #fff;
+        text-align: center;
+        font-family: "Glacial Indifference";
+        font-size: 24px;
+        font-weight: 700;
       }
 
       .modal-overlay.hidden {
@@ -486,24 +496,98 @@
       </button>
     </form>
     <div class="modal-overlay hidden" id="modal-overlay">
+      <h2 class="">
+        Please review the candidates below to refine our <br />
+        AI model and curate the best list of candidates
+      </h2>
       <div class="tinder" id="tinder-modal">
         <div class="tinder--cards"></div>
       </div>
     </div>
     <script>
-      let cardData = [];
+      const webhookUrl =
+        "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462";
       const SWIPE_THRESHOLD = 100;
       const CLICK_THRESHOLD = 10;
+
+      let cardData = [];
       let isModalOpen = false;
       const modalOverlay = document.getElementById("modal-overlay");
 
       if (!isModalOpen) {
         localStorage.removeItem("usersData");
+        localStorage.removeItem("userCredentials");
       }
       const usersData = JSON.parse(localStorage.getItem("usersData")) || {
         acceptedUsers: [],
         declinedUsers: [],
       };
+
+      // Utility Functions
+      const updateLocalStorage = () => {
+        localStorage.setItem("usersData", JSON.stringify(usersData));
+      };
+      function generateSessionId(length) {
+        const array = new Uint32Array(length);
+        window.crypto.getRandomValues(array);
+        return Array.from(array, (dec) =>
+          ("0" + dec.toString(16)).substr(-2)
+        ).join("");
+      }
+
+      const showFullScreenLoader = () => {
+        const loaderOverlay = document.createElement("div");
+        loaderOverlay.id = "loader-overlay";
+        loaderOverlay.style.position = "fixed";
+        loaderOverlay.style.top = "0";
+        loaderOverlay.style.left = "0";
+        loaderOverlay.style.width = "100%";
+        loaderOverlay.style.height = "100%";
+        loaderOverlay.style.backgroundColor = "rgba(0, 0, 0, 0.5)";
+        loaderOverlay.style.display = "flex";
+        loaderOverlay.style.justifyContent = "center";
+        loaderOverlay.style.alignItems = "center";
+        loaderOverlay.style.zIndex = "9999";
+
+        const loader = document.createElement("div");
+        loader.className = "loader";
+        loader.style.border = "4px solid #f3f3f3";
+        loader.style.borderTop = "4px solid #6a5bcd";
+        loader.style.borderRadius = "50%";
+        loader.style.width = "50px";
+        loader.style.height = "50px";
+        loader.style.animation = "spin 1s linear infinite";
+
+        loaderOverlay.appendChild(loader);
+        document.body.appendChild(loaderOverlay);
+      };
+
+      const hideFullScreenLoader = () => {
+        const loaderOverlay = document.getElementById("loader-overlay");
+        if (loaderOverlay) {
+          loaderOverlay.remove();
+        }
+      };
+      function convertMarkdownToHtml(markdown) {
+        if (markdown.includes("http") || markdown.includes("https")) {
+          markdown = markdown.replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="$2" target="_blank">$1</a>'
+          );
+        } else {
+          markdown = markdown.replace(
+            /\[([^\]]+)\]\(([^)]+)\)/g,
+            '<a href="https://$2" target="_blank">$1</a>'
+          );
+        }
+
+        markdown = markdown.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
+        markdown = markdown.replace(/\*([^*]+)\*/g, "<em>$1</em>");
+        markdown = markdown
+          .replace(/(?:\r\n|\r|\n){2,}/g, "<br><br>")
+          .replace(/(?:\r\n|\r|\n)/g, "<br>");
+        return markdown;
+      }
 
       // Access the arrays
       const acceptedUsers = usersData.acceptedUsers;
@@ -525,36 +609,7 @@
         handleSubmit();
       });
 
-      function generateSessionId(length) {
-        const array = new Uint32Array(length);
-        window.crypto.getRandomValues(array);
-        return Array.from(array, (dec) =>
-          ("0" + dec.toString(16)).substr(-2)
-        ).join("");
-      }
-
       const sessionId = generateSessionId(32);
-
-      function convertMarkdownToHtml(markdown) {
-        if (markdown.includes("http") || markdown.includes("https")) {
-          markdown = markdown.replace(
-            /\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="$2" target="_blank">$1</a>'
-          );
-        } else {
-          markdown = markdown.replace(
-            /\[([^\]]+)\]\(([^)]+)\)/g,
-            '<a href="https://$2" target="_blank">$1</a>'
-          );
-        }
-
-        markdown = markdown.replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>");
-        markdown = markdown.replace(/\*([^*]+)\*/g, "<em>$1</em>");
-        markdown = markdown
-          .replace(/(?:\r\n|\r|\n){2,}/g, "<br><br>")
-          .replace(/(?:\r\n|\r|\n)/g, "<br>");
-        return markdown;
-      }
 
       function splitSentences(text) {
         if (
@@ -607,36 +662,38 @@
         const modal = document.createElement("div");
         modal.classList.add("modal");
         modal.innerHTML = `
-            <div class="modal-content card">
-              <h2 class="${candidates?.length ? "" : "hidden"}">We have ${
-          acceptedUsers.length
-        } top <br/> matches!</h2>
-              <p>
-                ${
-                  candidates?.length
-                    ? "Congrats! Book a call with our Co-Founder now to run through your candidates."
-                    : "No perfect matches — book a call with our team so we can better understand your needs and find the right fit"
-                }</p>
-              <div>
-              <button class="book-call"
-                  type="button"
-                  onclick="bookACall()"
-              >Book a Call</button>
-              <button
-                  class="close-modal ${candidates?.length > 0 ? "" : "hidden"}"
-                  type="button"
-                  onclick="continueSwiping()"
-              class="book-call">
-              ${
-                totalLength !== cardData.length
-                  ? "Continue Swiping"
-                  : "Close Swiping"
-              }
-            
-              </button>
-              </div>
-            </div>
-          `;
+                  <div class="modal-content card">
+                    <h2 class="${candidates?.length ? "" : "hidden"}">
+                         We have ${candidates.length} top <br/> matches!
+                    </h2>
+                    <p>
+                      ${
+                        candidates?.length
+                          ? "Congrats! Book a call with our Co-Founder now to run through your candidates."
+                          : "No perfect matches — book a call with our team so we can better understand your needs and find the right fit"
+                      }</p>
+                    <div>
+                    <button class="book-call"
+                        type="button"
+                        onclick="bookACall()"
+                    >Book a Call</button>
+                    <button
+                        class="close-modal ${
+                          candidates?.length > 0 ? "" : "hidden"
+                        }"
+                        type="button"
+                        onclick="continueSwiping()"
+                    class="book-call">
+                    ${
+                      totalLength !== cardData.length
+                        ? "Continue Swiping"
+                        : "Close Swiping"
+                    }
+
+                    </button>
+                    </div>
+                  </div>
+                `;
         document.body.appendChild(modal);
       };
 
@@ -664,19 +721,16 @@
         chatbox.scrollTop = chatbox.scrollHeight;
 
         // Send request to webhook
-        fetch(
-          "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462",
-          {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: JSON.stringify({
-              sessionId: sessionId,
-              message: userInput,
-            }),
-          }
-        )
+        fetch(webhookUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            sessionId: sessionId,
+            message: userInput,
+          }),
+        })
           .then((response) => response.json())
           .then((data) => {
             const botReply = convertMarkdownToHtml(data.reply);
@@ -692,6 +746,13 @@
               if (rest.location) {
                 rest.location = rest.location.replace(/[()]/g, "").trim(); // Remove parentheses and trim whitespace
               }
+              localStorage.setItem(
+                "userCredentials",
+                JSON.stringify({
+                  userName: rest.userName,
+                  email: rest.email,
+                })
+              );
               const queryString = new URLSearchParams(rest).toString();
               fetch(
                 `https://api.calyptus.co/api/tinder-matching?${queryString}`,
@@ -708,7 +769,6 @@
                     botMessage.innerHTML = `<div class="bubble">No candidates found.</div>`;
                     chatbox.scrollTop = chatbox.scrollHeight;
                     showBookCallModal(data.data);
-                    // botMessage.removeChild(loader);
                     return;
                   }
 
@@ -733,8 +793,8 @@
               reloadSvg.setAttribute("y", "0");
               reloadSvg.setAttribute("fill", "none");
               reloadSvg.innerHTML = `
-               <path d="M13.9997 7.33325C13.8229 7.33325 13.6533 7.40349 13.5283 7.52851C13.4032 7.65354 13.333 7.82311 13.333 7.99992C13.3409 9.2486 12.9132 10.461 12.1234 11.4282C11.3337 12.3955 10.2314 13.057 9.00632 13.299C7.78127 13.5409 6.5102 13.3481 5.41201 12.7538C4.31383 12.1594 3.45728 11.2007 2.98989 10.0428C2.5225 8.88481 2.47354 7.60013 2.85142 6.40997C3.22931 5.21981 4.01039 4.19867 5.06014 3.52244C6.1099 2.8462 7.36261 2.55719 8.60252 2.70519C9.84243 2.85319 10.9919 3.42893 11.853 4.33325H10.253C10.0762 4.33325 9.90663 4.40349 9.78161 4.52851C9.65658 4.65354 9.58634 4.82311 9.58634 4.99992C9.58634 5.17673 9.65658 5.3463 9.78161 5.47132C9.90663 5.59635 10.0762 5.66658 10.253 5.66658H13.273C13.4498 5.66658 13.6194 5.59635 13.7444 5.47132C13.8694 5.3463 13.9397 5.17673 13.9397 4.99992V1.99992C13.9397 1.82311 13.8694 1.65354 13.7444 1.52851C13.6194 1.40349 13.4498 1.33325 13.273 1.33325C13.0962 1.33325 12.9266 1.40349 12.8016 1.52851C12.6766 1.65354 12.6063 1.82311 12.6063 1.99992V3.17992C11.4961 2.11862 10.0535 1.47322 8.52235 1.3528C6.9912 1.23239 5.46543 1.64435 4.20296 2.51905C2.94048 3.39374 2.01875 4.67752 1.59356 6.15338C1.16837 7.62923 1.26582 9.20663 1.86942 10.6189C2.47301 12.0312 3.54574 13.1918 4.90627 13.9045C6.2668 14.6171 7.83168 14.8382 9.33637 14.5302C10.8411 14.2223 12.1933 13.4042 13.1644 12.2144C14.1356 11.0245 14.6661 9.5358 14.6663 7.99992C14.6663 7.82311 14.5961 7.65354 14.4711 7.52851C14.3461 7.40349 14.1765 7.33325 13.9997 7.33325Z" fill="#fff"/>
-              `;
+                     <path d="M13.9997 7.33325C13.8229 7.33325 13.6533 7.40349 13.5283 7.52851C13.4032 7.65354 13.333 7.82311 13.333 7.99992C13.3409 9.2486 12.9132 10.461 12.1234 11.4282C11.3337 12.3955 10.2314 13.057 9.00632 13.299C7.78127 13.5409 6.5102 13.3481 5.41201 12.7538C4.31383 12.1594 3.45728 11.2007 2.98989 10.0428C2.5225 8.88481 2.47354 7.60013 2.85142 6.40997C3.22931 5.21981 4.01039 4.19867 5.06014 3.52244C6.1099 2.8462 7.36261 2.55719 8.60252 2.70519C9.84243 2.85319 10.9919 3.42893 11.853 4.33325H10.253C10.0762 4.33325 9.90663 4.40349 9.78161 4.52851C9.65658 4.65354 9.58634 4.82311 9.58634 4.99992C9.58634 5.17673 9.65658 5.3463 9.78161 5.47132C9.90663 5.59635 10.0762 5.66658 10.253 5.66658H13.273C13.4498 5.66658 13.6194 5.59635 13.7444 5.47132C13.8694 5.3463 13.9397 5.17673 13.9397 4.99992V1.99992C13.9397 1.82311 13.8694 1.65354 13.7444 1.52851C13.6194 1.40349 13.4498 1.33325 13.273 1.33325C13.0962 1.33325 12.9266 1.40349 12.8016 1.52851C12.6766 1.65354 12.6063 1.82311 12.6063 1.99992V3.17992C11.4961 2.11862 10.0535 1.47322 8.52235 1.3528C6.9912 1.23239 5.46543 1.64435 4.20296 2.51905C2.94048 3.39374 2.01875 4.67752 1.59356 6.15338C1.16837 7.62923 1.26582 9.20663 1.86942 10.6189C2.47301 12.0312 3.54574 13.1918 4.90627 13.9045C6.2668 14.6171 7.83168 14.8382 9.33637 14.5302C10.8411 14.2223 12.1933 13.4042 13.1644 12.2144C14.1356 11.0245 14.6661 9.5358 14.6663 7.99992C14.6663 7.82311 14.5961 7.65354 14.4711 7.52851C14.3461 7.40349 14.1765 7.33325 13.9997 7.33325Z" fill="#fff"/>
+                    `;
               submitBtn.appendChild(reloadSvg);
               submitBtn.onclick = () => {
                 window.location.reload();
@@ -773,39 +833,59 @@
         isModalOpen = false;
         modalOverlay.classList.add("hidden");
       };
+      const onSendCandidates = async () => {
+        try {
+          showFullScreenLoader();
+          const data = {
+            "Candidates Shown": cardData,
+            "Candidates Selected": acceptedUsers,
+            "Candidates Rejected": declinedUsers,
+          };
+          const body = JSON.stringify({
+            sessionId: sessionId,
+            message: data,
+          });
 
-      const bookACall = async () => {
-        const data = {
-          candidates_shown: cardData.length,
-          candidates_selected: [...acceptedUsers.map((user) => user.id)],
-          candidates_rejected: [...declinedUsers.map((user) => user.id)],
-        };
-        // fetch(
-        //   "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462",
-        //   {
-        //     method: "POST",
-        //     headers: {
-        //       "Content-Type": "application/json",
-        //     },
-        //     body: JSON.stringify({
-        //       sessionId: sessionId,
-        //       // message: localStorage.getItem("usersData")
-        //       message: JSON.stringify(usersData),
-        //     }),
-        //   }
-        // )
-        //   .then((response) => response.json())
-        //   .then((data) => {
-        //     console.log(data);
-        //   });
+          const response = await fetch(webhookUrl, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: body,
+          });
+          const responseData = await response.json();
 
-        window.open("https://calendly.com/callum-calyptus/15m", "_blank");
-        const totalLength = acceptedUsers.length + declinedUsers.length;
-        const modal = document.querySelector(".modal");
-        modal.remove();
-        if (totalLength === cardData.length) {
+          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+          hideFullScreenLoader();
+
+          const modal = document.querySelector(".modal");
+          modal.remove();
+
           closeModal();
+
+          const chatbox = document.getElementById("chatbox");
+          const botMessage = document.createElement("div");
+
+          botMessage.innerHTML = `<div class="bubble">${splitSentences(
+            convertMarkdownToHtml(responseData.reply)
+          )}</div>`;
+          chatbox.scrollTop = chatbox.scrollHeight;
+
           localStorage.removeItem("usersData");
+          localStorage.removeItem("userCredentials");
+        } catch (error) {
+          console.error("Error booking a call:", error);
+          hideFullScreenLoader();
+        }
+      };
+      const bookACall = async () => {
+        const modal = document.querySelector(".modal");
+        const totalLength = acceptedUsers.length + declinedUsers.length;
+        if (totalLength === cardData.length) {
+          onSendCandidates();
+        } else {
+          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+          modal.remove();
         }
       };
 
@@ -814,14 +894,11 @@
         const totalLength = acceptedUsers.length + declinedUsers.length;
 
         if (totalLength === cardData.length) {
+          onSendCandidates();
           closeModal();
           localStorage.removeItem("usersData");
+          localStorage.removeItem("userCredentials");
         }
-      };
-
-      // Utility Functions
-      const updateLocalStorage = () => {
-        localStorage.setItem("usersData", JSON.stringify(usersData));
       };
 
       function generateTinderModal(candidates) {
@@ -847,81 +924,81 @@
           disabled
         ) => {
           return `
-  <article>
-    <div class="details">
-      <div class="company">
-        <div class="company--header ${
-          experiences?.[0].logo_url ? "" : "hidden"
-        }">
-          <img src="${getCompanyFavicon(
-            experiences?.[0].logo_url
-          )}" alt="Company Logo" />
-          <h3>${experiences?.[0].title}</h3>
-        </div>
-        <h1>${experiences?.[0].position}</h1>
-      </div>
-    </div>
+        <article>
+          <div class="details">
+            <div class="company">
+              <div class="company--header ${
+                experiences?.[0].logo_url ? "" : "hidden"
+              }">
+                <img src="${getCompanyFavicon(
+                  experiences?.[0].logo_url
+                )}" alt="Company Logo" />
+                <h3>${experiences?.[0].title}</h3>
+              </div>
+              <h1>${experiences?.[0].position}</h1>
+            </div>
+          </div>
 
-    <div class="card-info">
-    <div class="additional ${experiences?.[1]?.position ? "" : "hidden"}">
-      <div>
-        <p>Previous role:</p>
-        <div>
-          <span>${experiences?.[1]?.position} &nbsp</span>
-          <span>${experiences?.[1]?.title}</span>
-          <img src="${getCompanyFavicon(
-            experiences?.[1]?.logo_url
-          )}" alt="Company Logo" 
-            class="${experiences?.[1]?.logo_url ? "" : "hidden"}"
-          />
-        </div>
-      </div>
-    </div>
+          <div class="card-info">
+          <div class="additional ${experiences?.[1]?.position ? "" : "hidden"}">
+            <div>
+              <p>Previous role:</p>
+              <div>
+                <span>${experiences?.[1]?.position} &nbsp</span>
+                <span>${experiences?.[1]?.title}</span>
+                <img src="${getCompanyFavicon(
+                  experiences?.[1]?.logo_url
+                )}" alt="Company Logo"
+                  class="${experiences?.[1]?.logo_url ? "" : "hidden"}"
+                />
+              </div>
+            </div>
+          </div>
 
-    <div class="additional">
-      <p>Location:</p>
-      <span>${countries?.join(", ")}</span>
-    </div>
+          <div class="additional">
+            <p>Location:</p>
+            <span>${countries?.join(", ")}</span>
+          </div>
 
-    <div class="additional">
-      <p>Experience:</p>
-      <span>${experience_years} ${
+          <div class="additional">
+            <p>Experience:</p>
+            <span>${experience_years} ${
             experience_years > 1 ? "yrs" : "year"
           } of experience</span>
 
-        
-    </div>
-    </div>
-  </article>
 
-  <div class="tinder--buttons ${disabled ? "hidden" : ""}" >
-    <button class="${disabled ? "" : "decline"}">
-      <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D" />
-        <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-        <path d="M25.3325 24.75L46.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-        <defs>
-          <linearGradient id="paint0_linear_7034_2746" x1="70.8325" y1="70" x2="32.0857" y2="4.27577" gradientUnits="userSpaceOnUse">
-            <stop stop-color="white" />
-            <stop offset="1" stop-color="white" stop-opacity="0.6" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </button>
-    <button class="${disabled ? "" : "approve"}">
-      <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <circle cx="35.8325" cy="35" r="35" fill="url(#paint0_linear_7034_2742)" />
-        <path d="M49.8325 24.75L30.5825 44L21.8325 35.25" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
-        <defs>
-          <linearGradient id="paint0_linear_7034_2742" x1="70.8325" y1="70" x2="41.0133" y2="-15.9787" gradientUnits="userSpaceOnUse">
-            <stop stop-color="#00B140" />
-            <stop offset="1" stop-color="#84F998" />
-          </linearGradient>
-        </defs>
-      </svg>
-    </button>
-  </div>
-`;
+          </div>
+          </div>
+        </article>
+
+        <div class="tinder--buttons ${disabled ? "hidden" : ""}" >
+          <button class="${disabled ? "" : "decline"}">
+            <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D" />
+              <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+              <path d="M25.3325 24.75L46.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="paint0_linear_7034_2746" x1="70.8325" y1="70" x2="32.0857" y2="4.27577" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="white" />
+                  <stop offset="1" stop-color="white" stop-opacity="0.6" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </button>
+          <button class="${disabled ? "" : "approve"}">
+            <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="35.8325" cy="35" r="35" fill="url(#paint0_linear_7034_2742)" />
+              <path d="M49.8325 24.75L30.5825 44L21.8325 35.25" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
+              <defs>
+                <linearGradient id="paint0_linear_7034_2742" x1="70.8325" y1="70" x2="41.0133" y2="-15.9787" gradientUnits="userSpaceOnUse">
+                  <stop stop-color="#00B140" />
+                  <stop offset="1" stop-color="#84F998" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </button>
+        </div>
+      `;
         };
 
         const createCardElement = (
