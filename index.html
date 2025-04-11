@@ -523,12 +523,10 @@
 
       // local storage keys
       const USER_DATA = "usersData";
-      const USER_CREDENTIALS = "userCredentials";
+      // const USER_CREDENTIALS = "userCredentials";
       const FILTER = "filter";
 
-      const clearLocalStorage = (
-        keys = [USER_DATA, USER_CREDENTIALS, FILTER]
-      ) => {
+      const clearLocalStorage = (keys = [USER_DATA, FILTER]) => {
         keys.forEach((key) => {
           if (localStorage.getItem(key) !== null) {
             localStorage.removeItem(key);
@@ -755,29 +753,40 @@
             const botReply = convertMarkdownToHtml(data.reply);
 
             if (data.reply.includes("jobfilter")) {
-              const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
+              // const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
+              let parsedData;
               const cleanedReply = data.reply
                 .replace(/```json/g, "")
                 .replace(/```/g, "")
                 .trim();
+              const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
 
-              const parsedData = JSON.parse(
-                jsonMatch && jsonMatch[1] ? jsonMatch[1] : cleanedReply
-              );
+              if (jsonMatch && jsonMatch[1]) {
+                // Extract and parse JSON from Markdown-style code block
+                parsedData = JSON.parse(jsonMatch[1].trim());
+              } else {
+                // Fallback: Directly parse the reply as JSON
+                parsedData = cleanedReply;
+              }
+              if (typeof parsedData === "string")
+                parsedData = JSON.parse(parsedData);
+
               const { type, userName, ...rest } = parsedData;
               if (rest.location) {
-                rest.location = rest.location.replace(/[()]/g, "").trim(); // Remove parentheses and trim whitespace
+                rest.location = rest.location.replace(/[()]/g, "").trim();
               }
               rest.name = userName;
 
-              localStorage.setItem(
-                USER_CREDENTIALS,
-                JSON.stringify({
-                  name: rest.userName,
-                  email: rest.email,
-                })
-              );
+              // Save user credentials to localStorage
+              // localStorage.setItem(
+              //   USER_CREDENTIALS,
+              //   JSON.stringify({
+              //     name: userName,
+              //     email: rest.email,
+              //   })
+              // );
 
+              rest.minimum_years_of_experience = 0;
               localStorage.setItem(FILTER, JSON.stringify(rest));
               const queryString = new URLSearchParams(rest).toString();
               fetch(`${API_ROOT_URL}/api/tinder-matching?${queryString}`, {
@@ -861,9 +870,9 @@
         if (cardData && cardData.length > 0) {
           try {
             showFullScreenLoader();
-            const userCredentials = JSON.parse(
-              localStorage.getItem(USER_CREDENTIALS)
-            );
+            // const userCredentials = JSON.parse(
+            //   localStorage.getItem(USER_CREDENTIALS)
+            // );
             const data = {
               "Candidates Shown": cardData,
               "Candidates Selected": acceptedUsers,
