@@ -344,7 +344,7 @@
       }
 
       /* "Book a Call" modal */
-      .modal {
+      .congrats-modal {
         position: fixed;
         top: 0;
         left: 0;
@@ -460,6 +460,9 @@
       .hidden {
         display: none !important;
       }
+      .disable-interactions {
+        pointer-events: none;
+      }
     </style>
   </head>
   <body>
@@ -505,27 +508,52 @@
       </div>
     </div>
     <script>
+      const API_ROOT_URL = "https://api.calyptus.co";
       const webhookUrl =
         "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462";
       const SWIPE_THRESHOLD = 100;
       const CLICK_THRESHOLD = 10;
 
       let cardData = [];
+      let totalCandidates = 0;
       let isModalOpen = false;
+      let sessionId = generateSessionId(32);
+
+      // Cache DOM Elements
+      const chatbox = document.getElementById("chatbox");
+      const userInput = document.getElementById("userInput");
+      const form = document.querySelector(".chat-form");
+      const submitButton = document.querySelector(".button.chat");
       const modalOverlay = document.getElementById("modal-overlay");
 
+      // local storage keys
+      const USER_DATA = "usersData";
+      const USER_CREDENTIALS = "userCredentials";
+      const FILTER = "filter";
+
+      const clearLocalStorage = (
+        keys = [USER_DATA, USER_CREDENTIALS, FILTER]
+      ) => {
+        keys.forEach((key) => {
+          if (localStorage.getItem(key) !== null) {
+            localStorage.removeItem(key);
+          }
+        });
+      };
       if (!isModalOpen) {
-        localStorage.removeItem("usersData");
-        localStorage.removeItem("userCredentials");
+        clearLocalStorage();
       }
       const usersData = JSON.parse(localStorage.getItem("usersData")) || {
         acceptedUsers: [],
         declinedUsers: [],
       };
+      // Access the arrays
+      const acceptedUsers = usersData.acceptedUsers;
+      const declinedUsers = usersData.declinedUsers;
 
       // Utility Functions
       const updateLocalStorage = () => {
-        localStorage.setItem("usersData", JSON.stringify(usersData));
+        localStorage.setItem(USER_DATA, JSON.stringify(usersData));
       };
       function generateSessionId(length) {
         const array = new Uint32Array(length);
@@ -534,6 +562,11 @@
           ("0" + dec.toString(16)).substr(-2)
         ).join("");
       }
+      const getCompanyFavicon = (url) => {
+        if (!url) return "";
+        const domain = new URL(url).hostname;
+        return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
+      };
 
       const showFullScreenLoader = () => {
         const loaderOverlay = document.createElement("div");
@@ -564,9 +597,7 @@
 
       const hideFullScreenLoader = () => {
         const loaderOverlay = document.getElementById("loader-overlay");
-        if (loaderOverlay) {
-          loaderOverlay.remove();
-        }
+        if (loaderOverlay) loaderOverlay.remove();
       };
       function convertMarkdownToHtml(markdown) {
         if (markdown.includes("http") || markdown.includes("https")) {
@@ -589,27 +620,19 @@
         return markdown;
       }
 
-      // Access the arrays
-      const acceptedUsers = usersData.acceptedUsers;
-      const declinedUsers = usersData.declinedUsers;
-
       // document.addEventListener("DOMContentLoaded", function () {
-      const form = document.querySelector(".chat-form");
-      const submitButton = document.querySelector(".button.chat");
 
       // Prevent default form submission
-      form.addEventListener("submit", function (event) {
-        event.preventDefault();
-        handleSubmit();
+      form.addEventListener("submit", function (e) {
+        e.preventDefault();
+        handleSubmit(e);
       });
 
       // Trigger submission when the button is clicked
-      submitButton.addEventListener("click", function (event) {
-        event.preventDefault();
-        handleSubmit();
+      submitButton.addEventListener("click", function (e) {
+        e.preventDefault();
+        handleSubmit(e);
       });
-
-      const sessionId = generateSessionId(32);
 
       function splitSentences(text) {
         if (
@@ -660,11 +683,12 @@
         const totalLength = acceptedUsers.length + declinedUsers.length;
 
         const modal = document.createElement("div");
-        modal.classList.add("modal");
+        modal.classList.add("congrats-modal");
+        modalOverlay.classList.add("disable-interactions");
         modal.innerHTML = `
                   <div class="modal-content card">
-                    <h2 class="${candidates?.length ? "" : "hidden"}">
-                         We have ${candidates.length} top <br/> matches!
+                    <h2 class="${totalCandidates > 0 ? "" : "hidden"}">
+                         We have ${totalCandidates} top <br/> matches!
                     </h2>
                     <p>
                       ${
@@ -675,17 +699,17 @@
                     <div>
                     <button class="book-call"
                         type="button"
-                        onclick="bookACall()"
+                        onclick="bookACall(event, ${candidates.length})"
                     >Book a Call</button>
                     <button
                         class="close-modal ${
                           candidates?.length > 0 ? "" : "hidden"
                         }"
                         type="button"
-                        onclick="continueSwiping()"
-                    class="book-call">
+                        onclick="continueSwiping(event, ${candidates.length})"
+                         class="book-call">
                     ${
-                      totalLength !== cardData.length
+                      totalLength !== candidates.length
                         ? "Continue Swiping"
                         : "Close Swiping"
                     }
@@ -697,11 +721,11 @@
         document.body.appendChild(modal);
       };
 
-      function handleSubmit() {
+      function handleSubmit(e) {
+        event.preventDefault();
+
         let userInput = document.getElementById("userInput").value;
         if (userInput.trim() === "") return;
-
-        let chatbox = document.getElementById("chatbox");
 
         // Display user's message
         let userMessage = document.createElement("div");
@@ -736,43 +760,47 @@
             const botReply = convertMarkdownToHtml(data.reply);
 
             if (data.reply.includes("jobfilter")) {
+              const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
               const cleanedReply = data.reply
                 .replace(/```json/g, "")
                 .replace(/```/g, "")
                 .trim();
 
-              const parsedData = JSON.parse(cleanedReply);
-              const { type, ...rest } = parsedData;
+              const parsedData = JSON.parse(
+                jsonMatch && jsonMatch[1] ? jsonMatch[1] : cleanedReply
+              );
+              const { type, userName, ...rest } = parsedData;
               if (rest.location) {
                 rest.location = rest.location.replace(/[()]/g, "").trim(); // Remove parentheses and trim whitespace
               }
+              rest.name = userName;
+
               localStorage.setItem(
-                "userCredentials",
+                USER_CREDENTIALS,
                 JSON.stringify({
-                  userName: rest.userName,
+                  name: rest.userName,
                   email: rest.email,
                 })
               );
+
+              localStorage.setItem(FILTER, JSON.stringify(rest));
               const queryString = new URLSearchParams(rest).toString();
-              fetch(
-                `https://api.calyptus.co/api/tinder-matching?${queryString}`,
-                {
-                  method: "GET",
-                  headers: {
-                    "Content-Type": "application/json",
-                  },
-                }
-              )
+              fetch(`${API_ROOT_URL}/api/tinder-matching?${queryString}`, {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              })
                 .then((response) => response.json())
                 .then((data) => {
-                  if (!data.data || data.data.length === 0) {
+                  if (!data.data.data || data.data.data.length === 0) {
                     botMessage.innerHTML = `<div class="bubble">No candidates found.</div>`;
                     chatbox.scrollTop = chatbox.scrollHeight;
-                    showBookCallModal(data.data);
+                    showBookCallModal(data.data.data);
                     return;
                   }
-
-                  generateTinderModal(data.data);
+                  totalCandidates = data.data.total;
+                  generateTinderModal(data.data.data);
                 })
                 .catch((error) => {
                   console.error("Error fetching Tinder data:", error);
@@ -833,71 +861,127 @@
         isModalOpen = false;
         modalOverlay.classList.add("hidden");
       };
+
       const onSendCandidates = async () => {
-        try {
-          showFullScreenLoader();
-          const data = {
-            "Candidates Shown": cardData,
-            "Candidates Selected": acceptedUsers,
-            "Candidates Rejected": declinedUsers,
-          };
-          const body = JSON.stringify({
-            sessionId: sessionId,
-            message: data,
-          });
+        if (cardData && cardData.length > 0) {
+          try {
+            showFullScreenLoader();
+            const userCredentials = JSON.parse(
+              localStorage.getItem(USER_CREDENTIALS)
+            );
+            const data = {
+              "Candidates Shown": cardData,
+              "Candidates Selected": acceptedUsers,
+              "Candidates Rejected": declinedUsers,
+            };
+            const body = JSON.stringify({
+              sessionId: sessionId,
+              message: data,
+            });
 
-          const response = await fetch(webhookUrl, {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
-            body: body,
-          });
-          const responseData = await response.json();
+            // First API call
+            const response = await fetch(webhookUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: body,
+            });
 
-          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
-          hideFullScreenLoader();
+            function createCandidate(id, match) {
+              return { id, match };
+            }
 
-          const modal = document.querySelector(".modal");
+            const candidates = [
+              ...acceptedUsers.map((user) => createCandidate(user.id, true)),
+              ...declinedUsers.map((user) => createCandidate(user.id, false)),
+            ];
+
+            const { email, name, ...rest } = JSON.parse(
+              localStorage.getItem(FILTER)
+            );
+
+            rest.location = rest.location.replace(/[()]/g, "").trim();
+            rest.location = rest.location
+              .split(/,| or /)
+              .map((loc) => loc.trim());
+
+            const filter = {
+              ...rest,
+              location: rest.location,
+            };
+
+            const matchingData = {
+              name,
+              email,
+              filter: filter,
+              candidates: candidates,
+            };
+
+            // Second API call
+            const r = await fetch(`${API_ROOT_URL}/api/tinder-matching`, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(matchingData),
+            });
+
+            const responseData = await response.json();
+            const responseMatchingData = await r.json();
+
+            // Display bot message
+            const botMessage = document.createElement("div");
+            botMessage.innerHTML = `<div class="bubble">${splitSentences(
+              convertMarkdownToHtml(responseData.reply)
+            )}</div>`;
+            chatbox.appendChild(botMessage);
+            chatbox.scrollTop = chatbox.scrollHeight;
+            window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+
+            const modal = document.querySelector(".congrats-modal");
+            if (modal) {
+              modal.remove();
+            }
+            modalOverlay.classList.remove("disable-interactions");
+            closeModal();
+          } catch (error) {
+            console.error("Error processing API calls:", error);
+          } finally {
+            hideFullScreenLoader();
+          }
+        } else {
+          const modal = document.querySelector(".congrats-modal");
+          modalOverlay.classList.remove("disable-interactions");
           modal.remove();
 
           closeModal();
-
-          const chatbox = document.getElementById("chatbox");
-          const botMessage = document.createElement("div");
-
-          botMessage.innerHTML = `<div class="bubble">${splitSentences(
-            convertMarkdownToHtml(responseData.reply)
-          )}</div>`;
-          chatbox.scrollTop = chatbox.scrollHeight;
-
-          localStorage.removeItem("usersData");
-          localStorage.removeItem("userCredentials");
-        } catch (error) {
-          console.error("Error booking a call:", error);
-          hideFullScreenLoader();
+          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
         }
       };
-      const bookACall = async () => {
-        const modal = document.querySelector(".modal");
+      const bookACall = async (e, candidatesLength) => {
+        e.preventDefault();
+        const modal = document.querySelector(".congrats-modal");
         const totalLength = acceptedUsers.length + declinedUsers.length;
-        if (totalLength === cardData.length) {
+        if (totalLength === candidatesLength) {
           onSendCandidates();
         } else {
           window.open("https://calendly.com/callum-calyptus/15m", "_blank");
           modal.remove();
+          modalOverlay.classList.remove("disable-interactions");
         }
       };
 
-      const continueSwiping = () => {
-        document.querySelector(".modal").remove();
+      const continueSwiping = (e, candidatesLength) => {
+        e.preventDefault();
+        const modal = document.querySelector(".congrats-modal");
+        modalOverlay.classList.remove("disable-interactions");
+        modal.remove();
         const totalLength = acceptedUsers.length + declinedUsers.length;
 
-        if (totalLength === cardData.length) {
+        if (totalLength === candidatesLength) {
           onSendCandidates();
           closeModal();
-          localStorage.removeItem("usersData");
-          localStorage.removeItem("userCredentials");
         }
       };
 
@@ -912,12 +996,6 @@
           modalOverlay.classList.remove("hidden");
         }, 100);
 
-        const getCompanyFavicon = (url) => {
-          if (!url) return "";
-          const domain = new URL(url).hostname;
-          return `https://s2.googleusercontent.com/s2/favicons?domain=${domain}`;
-        };
-
         // Card Creation
         const baseCard = (
           { experiences, countries, experience_years },
@@ -927,11 +1005,11 @@
         <article>
           <div class="details">
             <div class="company">
-              <div class="company--header ${
-                experiences?.[0].logo_url ? "" : "hidden"
-              }">
+             <div class="company--header ${
+               experiences?.[0].website_url ? "" : "hidden"
+             }">
                 <img src="${getCompanyFavicon(
-                  experiences?.[0].logo_url
+                  experiences?.[0].website_url
                 )}" alt="Company Logo" />
                 <h3>${experiences?.[0].title}</h3>
               </div>
@@ -944,13 +1022,14 @@
             <div>
               <p>Previous role:</p>
               <div>
-                <span>${experiences?.[1]?.position} &nbsp</span>
-                <span>${experiences?.[1]?.title}</span>
-                <img src="${getCompanyFavicon(
-                  experiences?.[1]?.logo_url
-                )}" alt="Company Logo"
-                  class="${experiences?.[1]?.logo_url ? "" : "hidden"}"
-                />
+                <span>${experiences?.[1]?.position}, </span>
+                 <span>${experiences?.[1]?.title}</span>
+                  <img src="${getCompanyFavicon(
+                    experiences?.[1]?.website_url
+                  )}" alt="Company Logo" 
+                    class="${experiences?.[1]?.website_url ? "" : "hidden"}"
+                  />
+              
               </div>
             </div>
           </div>
@@ -965,8 +1044,6 @@
             <span>${experience_years} ${
             experience_years > 1 ? "yrs" : "year"
           } of experience</span>
-
-
           </div>
           </div>
         </article>
