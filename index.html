@@ -786,26 +786,58 @@
                 parsedData = JSON.parse(parsedData);
 
               const { type, userName, ...rest } = parsedData;
+              console.log("Parsed Data:", parsedData);
               // if (rest.location) {
               //   rest.location = rest.location.replace(/[()]/g, "").trim();
               // }
-              if (rest.location) {
+              // if (rest.location) {
+              //   rest.location = rest.location
+              //     .replace(/[()]/g, "")
+              //     .replace(/\s*or\s*/gi, ",")
+              //     .split(",")
+              //     .map((loc) => loc.trim())
+              //     .filter((loc) => loc);
+              // }
+
+              if (Array.isArray(rest.location)) {
+                // If location is already an array, clean it up
                 rest.location = rest.location
-                  .replace(/[()]/g, "")
-                  .replace(/\s*or\s*/gi, ",")
-                  .split(",")
-                  .map((loc) => loc.trim())
-                  .filter((loc) => loc);
+                  .map((loc) => loc.replace(/[()]/g, "").trim()) // Remove parentheses and trim
+                  .filter((loc) => loc); // Remove empty strings
+              } else if (typeof rest.location === "string") {
+                // If location is a string, process it
+                rest.location = rest.location
+                  .replace(/[()]/g, "") // Remove parentheses
+                  .replace(/\s*or\s*/gi, ",") // Replace "or" with a comma
+                  .split(",") // Split by commas
+                  .map((loc) => loc.trim()) // Trim whitespace
+                  .filter((loc) => loc); // Remove empty strings
               }
-              rest.name = userName;
 
-              rest.minimum_years_of_experience = 0;
+              const queryParams = new URLSearchParams();
 
-              localStorage.setItem(FILTER, JSON.stringify(rest));
-              const queryString = new URLSearchParams({
-                ...rest,
-                location: rest.location.join(","),
-              }).toString();
+              // Add locations dynamically
+              rest.location.forEach((loc, index) => {
+                queryParams.append(`location[${index}]`, loc);
+              });
+
+              // Add other fields to queryParams
+              Object.keys(rest).forEach((key) => {
+                if (key !== "location") {
+                  queryParams.append(key, rest[key]);
+                }
+              });
+
+              const queryString = queryParams.toString();
+
+              localStorage.setItem(
+                FILTER,
+                JSON.stringify({
+                  ...rest,
+                  name: userName,
+                })
+              );
+
               fetch(`${API_ROOT_URL}/api/tinder-matching?${queryString}`, {
                 method: "GET",
                 headers: {
@@ -920,11 +952,20 @@
               localStorage.getItem(FILTER)
             );
 
-            rest.location = rest.location.replace(/[()]/g, "").trim();
-            rest.location = rest.location
-              .split(/,| or /)
-              .map((loc) => loc.trim());
-
+            // rest.location = rest.location.replace(/[()]/g, "").trim();
+            // rest.location = rest.location
+            //   .split(/,| or /)
+            //   .map((loc) => loc.trim());
+            if (typeof rest.location === "string") {
+              rest.location = rest.location
+                .replace(/[()]/g, "") // Remove parentheses
+                .split(/,| or /) // Split by commas or "or"
+                .map((loc) => loc.trim()); // Trim whitespace
+            } else if (Array.isArray(rest.location)) {
+              rest.location = rest.location
+                .map((loc) => loc.replace(/[()]/g, "").trim()) // Remove parentheses and trim
+                .filter((loc) => loc); // Remove empty strings
+            }
             const filter = {
               ...rest,
               location: rest.location,
