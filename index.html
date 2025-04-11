@@ -270,11 +270,6 @@
         gap: 6px;
       }
 
-      .tinder--card img {
-        width: 22px;
-        height: 22px;
-      }
-
       .tinder--card .additional {
         border-bottom: 1px solid #e0e0e0;
         padding-bottom: 6px;
@@ -996,6 +991,63 @@
           modalOverlay.classList.remove("hidden");
         }, 100);
 
+        const handleSwipe = (card, direction) => {
+          const congratsModal = document.querySelector(".congrats-modal");
+
+          if (congratsModal && !congratsModal.classList.contains("hidden")) {
+            return; // Prevent swiping
+          }
+
+          if (isSwiping) return; // Prevent multiple calls
+          isSwiping = true;
+          const cardId = card.getAttribute("data-id");
+          const moveX = direction === "left" ? "-120%" : "120%";
+          const rotateDeg = direction === "left" ? "-30deg" : "30deg";
+
+          card.style.transition = "transform 0.5s ease, opacity 0.4s ease";
+          card.style.transform = `translate(${moveX}, 0) rotate(${rotateDeg})`;
+          card.style.opacity = "0";
+
+          const currUser = candidates[currentCardIndex - 1];
+
+          if (direction === "right") {
+            acceptedUsers.push(currUser);
+
+            // Trigger the modal after 2 "yes" actions and every "yes" action after that
+            if (acceptedUsers.length === 2 || acceptedUsers.length > 2) {
+              showBookCallModal(candidates);
+            }
+          } else if (direction === "left") {
+            declinedUsers.push(currUser);
+          }
+
+          updateLocalStorage();
+
+          // Load next card below current
+          if (currentCardIndex < candidates.length) {
+            const nextCard = createCardElement(
+              candidates[currentCardIndex],
+              currentCardIndex
+            );
+            cardsContainer.insertBefore(nextCard, cardsContainer.firstChild);
+            initializeCard(nextCard);
+            currentCardIndex++;
+          }
+          const totalLength = acceptedUsers.length + declinedUsers.length;
+
+          if (totalLength === candidates.length) {
+            setTimeout(() => {
+              showBookCallModal(candidates);
+            }, 600);
+          }
+
+          // Remove old card after transition
+          setTimeout(() => {
+            card.remove();
+            isSwiping = false;
+          }, 500);
+        };
+
         // Card Creation
         const baseCard = (
           { experiences, countries, experience_years },
@@ -1049,7 +1101,8 @@
         </article>
 
         <div class="tinder--buttons ${disabled ? "hidden" : ""}" >
-          <button class="${disabled ? "" : "decline"}">
+          <button class="${disabled ? "" : "decline"}" type="button"
+          >
             <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="35.8325" cy="35" r="34.5" fill="url(#paint0_linear_7034_2746)" stroke="#71000D" />
               <path d="M46.3325 24.75L25.3325 45.75" stroke="#71000D" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -1062,7 +1115,9 @@
               </defs>
             </svg>
           </button>
-          <button class="${disabled ? "" : "approve"}">
+          <button class="${disabled ? "" : "approve"}"
+          type="button"
+          >
             <svg width="71" height="70" viewBox="0 0 71 70" fill="none" xmlns="http://www.w3.org/2000/svg">
               <circle cx="35.8325" cy="35" r="35" fill="url(#paint0_linear_7034_2742)" />
               <path d="M49.8325 24.75L30.5825 44L21.8325 35.25" stroke="white" stroke-width="3.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -1125,57 +1180,6 @@
             );
             cardsContainer.appendChild(rightCard);
           }
-        };
-
-        const handleSwipe = (card, direction) => {
-          if (isSwiping) return; // Prevent multiple calls
-          isSwiping = true;
-          const cardId = card.getAttribute("data-id");
-          const moveX = direction === "left" ? "-120%" : "120%";
-          const rotateDeg = direction === "left" ? "-30deg" : "30deg";
-
-          card.style.transition = "transform 0.5s ease, opacity 0.4s ease";
-          card.style.transform = `translate(${moveX}, 0) rotate(${rotateDeg})`;
-          card.style.opacity = "0";
-
-          const currUser = candidates[currentCardIndex - 1];
-
-          if (direction === "right") {
-            acceptedUsers.push(currUser);
-
-            // Trigger the modal after 2 "yes" actions and every "yes" action after that
-            if (acceptedUsers.length === 2 || acceptedUsers.length > 2) {
-              showBookCallModal(candidates);
-            }
-          } else if (direction === "left") {
-            declinedUsers.push(currUser);
-          }
-
-          updateLocalStorage();
-
-          // Load next card below current
-          if (currentCardIndex < candidates.length) {
-            const nextCard = createCardElement(
-              candidates[currentCardIndex],
-              currentCardIndex
-            );
-            cardsContainer.insertBefore(nextCard, cardsContainer.firstChild);
-            initializeCard(nextCard);
-            currentCardIndex++;
-          }
-          const totalLength = acceptedUsers.length + declinedUsers.length;
-
-          if (totalLength === candidates.length) {
-            setTimeout(() => {
-              showBookCallModal(candidates);
-            }, 600);
-          }
-
-          // Remove old card after transition
-          setTimeout(() => {
-            card.remove();
-            isSwiping = false;
-          }, 500);
         };
 
         const initializeCard = (card) => {
