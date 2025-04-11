@@ -506,6 +506,7 @@
       const API_ROOT_URL = "https://api.calyptus.co";
       const webhookUrl =
         "https://nishant-calyptus.app.n8n.cloud/webhook/ab9f4705-dd3b-4b75-9c5f-53b375c28462";
+      const calendlyUrl = "https://calendly.com/callum-calyptus/15m";
       const SWIPE_THRESHOLD = 100;
       const CLICK_THRESHOLD = 10;
 
@@ -612,8 +613,6 @@
           .replace(/(?:\r\n|\r|\n)/g, "<br>");
         return markdown;
       }
-
-      // document.addEventListener("DOMContentLoaded", function () {
 
       // Prevent default form submission
       form.addEventListener("submit", function (e) {
@@ -754,41 +753,59 @@
 
             if (data.reply.includes("jobfilter")) {
               // const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
+              // let parsedData;
+              // const cleanedReply = data.reply
+              //   .replace(/```json/g, "")
+              //   .replace(/```/g, "")
+              //   .trim();
+              // const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
+
+              // if (jsonMatch && jsonMatch[1]) {
+              //   parsedData = JSON.parse(jsonMatch[1].trim());
+              // } else {
+              //   parsedData = cleanedReply;
+              // }
               let parsedData;
+
               const cleanedReply = data.reply
                 .replace(/```json/g, "")
                 .replace(/```/g, "")
                 .trim();
-              const jsonMatch = data.reply.match(/```json\n([\s\S]*?)\n```/);
-
-              if (jsonMatch && jsonMatch[1]) {
-                // Extract and parse JSON from Markdown-style code block
-                parsedData = JSON.parse(jsonMatch[1].trim());
-              } else {
-                // Fallback: Directly parse the reply as JSON
+              const jsonMatch = cleanedReply.match(/{[\s\S]*}/);
+              // const jsonMatch2 = cleanedReply.match(/```json\n([\s\S]*?)\n```/);
+              if (jsonMatch && jsonMatch[0]) {
+                parsedData = JSON.parse(jsonMatch[0].trim());
+              }
+              // else if (jsonMatch2 && jsonMatch2[1]) {
+              //   parsedData = JSON.parse(jsonMatch2[1].trim());
+              // }
+              else {
                 parsedData = cleanedReply;
               }
               if (typeof parsedData === "string")
                 parsedData = JSON.parse(parsedData);
 
               const { type, userName, ...rest } = parsedData;
+              // if (rest.location) {
+              //   rest.location = rest.location.replace(/[()]/g, "").trim();
+              // }
               if (rest.location) {
-                rest.location = rest.location.replace(/[()]/g, "").trim();
+                rest.location = rest.location
+                  .replace(/[()]/g, "")
+                  .replace(/\s*or\s*/gi, ",")
+                  .split(",")
+                  .map((loc) => loc.trim())
+                  .filter((loc) => loc);
               }
               rest.name = userName;
 
-              // Save user credentials to localStorage
-              // localStorage.setItem(
-              //   USER_CREDENTIALS,
-              //   JSON.stringify({
-              //     name: userName,
-              //     email: rest.email,
-              //   })
-              // );
-
               rest.minimum_years_of_experience = 0;
+
               localStorage.setItem(FILTER, JSON.stringify(rest));
-              const queryString = new URLSearchParams(rest).toString();
+              const queryString = new URLSearchParams({
+                ...rest,
+                location: rest.location.join(","),
+              }).toString();
               fetch(`${API_ROOT_URL}/api/tinder-matching?${queryString}`, {
                 method: "GET",
                 headers: {
@@ -870,9 +887,7 @@
         if (cardData && cardData.length > 0) {
           try {
             showFullScreenLoader();
-            // const userCredentials = JSON.parse(
-            //   localStorage.getItem(USER_CREDENTIALS)
-            // );
+
             const data = {
               "Candidates Shown": cardData,
               "Candidates Selected": acceptedUsers,
@@ -941,7 +956,6 @@
             )}</div>`;
             chatbox.appendChild(botMessage);
             chatbox.scrollTop = chatbox.scrollHeight;
-            window.open("https://calendly.com/callum-calyptus/15m", "_blank");
 
             const modal = document.querySelector(".congrats-modal");
             if (modal) {
@@ -949,6 +963,7 @@
             }
             modalOverlay.classList.remove("disable-interactions");
             closeModal();
+            window.open(calendlyUrl, "_blank");
           } catch (error) {
             console.error("Error processing API calls:", error);
           } finally {
@@ -960,7 +975,7 @@
           modal.remove();
 
           closeModal();
-          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
+          window.open(calendlyUrl, "_blank");
         }
       };
       const bookACall = async (e, candidatesLength) => {
@@ -970,9 +985,9 @@
         if (totalLength === candidatesLength) {
           onSendCandidates();
         } else {
-          window.open("https://calendly.com/callum-calyptus/15m", "_blank");
           modal.remove();
           modalOverlay.classList.remove("disable-interactions");
+          window.open(calendlyUrl, "_blank");
         }
       };
 
@@ -1009,6 +1024,7 @@
 
           if (isSwiping) return; // Prevent multiple calls
           isSwiping = true;
+
           const cardId = card.getAttribute("data-id");
           const moveX = direction === "left" ? "-120%" : "120%";
           const rotateDeg = direction === "left" ? "-30deg" : "30deg";
